@@ -1,0 +1,43 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "agendamedic-c36df",
+          "appId": "1:1057339924007:android:89d4895cb8bec6a8943802",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "agendamedic-c36df",
+          "configurations": {
+            "android": "1:1057339924007:android:89d4895cb8bec6a8943802",
+            "ios": "1:1057339924007:ios:1567eb331e118766943802",
+            "macos": "1:1057339924007:ios:1567eb331e118766943802",
+            "web": "1:1057339924007:web:aeeab3bb246ea9cc943802",
+            "windows": "1:1057339924007:web:5712ea0b347299e2943802"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log"
+      ]
+    }
+  ],
+  "storage": {
+    "rules": "storage.rules"
+  }
+}

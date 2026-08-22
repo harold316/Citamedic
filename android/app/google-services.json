@@ -1,0 +1,52 @@
+{
+  "project_info": {
+    "project_number": "1057339924007",
+    "firebase_url": "https://agendamedic-c36df-default-rtdb.firebaseio.com",
+    "project_id": "agendamedic-c36df",
+    "storage_bucket": "agendamedic-c36df.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1057339924007:android:89d4895cb8bec6a8943802",
+        "android_client_info": {
+          "package_name": "com.citamedic.citamedic"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWDAh4EEPzi2oEC_FDifOOTi1k2npckGE"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1057339924007:android:36326bac2950c636943802",
+        "android_client_info": {
+          "package_name": "com.example.calculadora_medica"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWDAh4EEPzi2oEC_FDifOOTi1k2npckGE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

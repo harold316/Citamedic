@@ -1,0 +1,6 @@
+{
+  "debug.toolBarLocation": "floating",
+  "debug.showInStatusBar": "always",
+  "dart.flutterHotReloadOnSave": "all",
+  "dart.hotReloadOnSave": "all"
+}

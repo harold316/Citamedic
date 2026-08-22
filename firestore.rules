@@ -1,0 +1,58 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && request.auth.token.email == 'haroldisita666@gmail.com';
+    }
+
+    function doctorNotSelfPublishing() {
+      return request.resource.data.published != true
+        || request.resource.data.published == resource.data.published;
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+    }
+
+    match /doctors/{doctorId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.auth.uid == doctorId
+        && request.resource.data.published != true;
+      allow update: if isAdmin() || (
+        isSignedIn()
+        && request.auth.uid == doctorId
+        && doctorNotSelfPublishing()
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /clinics/{clinicId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+        && request.auth.uid == clinicId
+        && request.resource.data.published != true;
+      allow update: if isAdmin() || (
+        isSignedIn()
+        && request.auth.uid == clinicId
+        && doctorNotSelfPublishing()
+      );
+      allow delete: if isAdmin();
+    }
+      allow create: if isSignedIn()
+        && request.resource.data.patientId == request.auth.uid
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
+      allow read: if isSignedIn() && (
+        isAdmin()
+        || resource.data.patientId == request.auth.uid
+        || resource.data.doctorId == request.auth.uid
+      );
+    }
+  }
+}
