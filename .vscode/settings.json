@@ -1,6 +1,39 @@
 {
-  "debug.toolBarLocation": "floating",
+  "debug.toolBarLocation": "commandCenter",
   "debug.showInStatusBar": "always",
+  "debug.openDebug": "openOnDebugBreak",
+  "window.commandCenter": true,
+  "workbench.statusBar.visible": true,
+  "workbench.editor.alwaysShowEditorActions": true,
+  "workbench.editor.editorActionsLocation": "titleBar",
   "dart.flutterHotReloadOnSave": "all",
-  "dart.hotReloadOnSave": "all"
+  "dart.hotReloadOnSave": "all",
+  "dart.showMainCodeLens": true,
+  "dart.showTestCodeLens": true,
+  "dart.projectSearchDepth": 5,
+  "emulator.hasEditorTitleIcon": true,
+  "emulator.emulatorPathWindows": "C:\\Users\\HP\\AppData\\Local\\Android\\Sdk\\emulator",
+  "emulator.emulatorPath": "C:\\Users\\HP\\AppData\\Local\\Android\\Sdk\\emulator",
+  "commands.commands": {
+    "Elegir emulador": {
+      "command": "flutter.selectDevice",
+      "icon": "device-mobile",
+      "statusBar": {
+        "alignment": "right",
+        "text": "$(device-mobile) Emulador",
+        "tooltip": "Elegir emulador o dispositivo móvil",
+        "priority": 100
+      }
+    },
+    "Iniciar debug": {
+      "command": "workbench.action.debug.start",
+      "icon": "debug-alt",
+      "statusBar": {
+        "alignment": "right",
+        "text": "$(debug-alt) Debug",
+        "tooltip": "Iniciar depuración (F5)",
+        "priority": 99
+      }
+    }
+  }
 }
