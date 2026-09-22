@@ -39,7 +39,7 @@ class Clinic {
     required this.photoUrl,
     required this.rating,
     this.photoUrls = const [],
-    this.country = 'República Dominicana',
+    this.country = defaultCountry,
     this.department,
     this.province,
     this.phone = '',
@@ -68,7 +68,7 @@ class Clinic {
 
   List<String> get gallery {
     if (photoUrls.isNotEmpty) {
-      return photoUrls.take(8).toList();
+      return photoUrls.take(10).toList();
     }
     if (hasCustomPhoto) {
       return [photoUrl];

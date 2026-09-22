@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Política de Privacidad — CitaMedic</title>
+  <style>
+    :root {
+      --teal: #0D9B8A;
+      --text: #1E2A32;
+      --muted: #5B6B73;
+      --bg: #f4faf8;
+      --card: #ffffff;
+    }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.6;
+    }
+    header {
+      background: var(--teal);
+      color: #fff;
+      padding: 36px 20px 28px;
+    }
+    header h1 { margin: 0 0 6px; font-size: 1.7rem; }
+    header p { margin: 0; opacity: 0.92; }
+    main {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 28px 20px 64px;
+    }
+    section {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 22px 22px 8px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    }
+    h2 { color: var(--teal); font-size: 1.2rem; margin-top: 0; }
+    h3 { font-size: 1.02rem; margin-bottom: 6px; }
+    ul { padding-left: 1.2rem; }
+    a { color: var(--teal); }
+    .meta { color: var(--muted); font-size: 0.95rem; }
+    footer {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 0 20px 40px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Política de Privacidad de CitaMedic</h1>
+    <p>Aplicación móvil para buscar profesionales de la salud y agendar citas en Bolivia.</p>
+  </header>
+  <main>
+    <p class="meta">
+      Última actualización: 22 de agosto de 2026<br>
+      Responsable: CitaMedic (aplicación Android, paquete <code>com.citamedic.citamedic</code>)<br>
+      Contacto: <a href="mailto:haroldisita666@gmail.com">haroldisita666@gmail.com</a>
+      · WhatsApp de soporte: <a href="https://wa.me/59173906744">+591 73906744</a>
+    </p>
+
+    <section>
+      <h2>1. Qué es CitaMedic</h2>
+      <p>
+        CitaMedic permite a pacientes, médicos y clínicas publicar o consultar
+        perfiles profesionales, especialidades, servicios, precios en bolivianos
+        y agendar citas. El administrador revisa los perfiles de médicos y
+        clínicas antes de publicarlas. También existe un modo invitado para
+        explorar el catálogo sin crear cuenta ni agendar.
+      </p>
+    </section>
+
+    <section>
+      <h2>2. Datos que recopilamos</h2>
+      <p>Solo pedimos lo necesario para que la app funcione. Según el tipo de cuenta:</p>
+
+      <h3>2.1 Pacientes</h3>
+      <ul>
+        <li>Nombre y correo de la cuenta de Google con la que se registran.</li>
+        <li>Identificador de usuario de Firebase.</li>
+        <li>Citas: médico, servicio, fecha, hora, duración, precio, método de pago “en clínica” y un mensaje opcional para el médico.</li>
+        <li>Ubicación de búsqueda (país, departamento, provincia y ciudad) para mostrar profesionales cercanos. Esta ubicación la elige el usuario; no es GPS continuo.</li>
+      </ul>
+
+      <h3>2.2 Médicos</h3>
+      <ul>
+        <li>Cuenta: correo y contraseña, o nombre y correo de Google.</li>
+        <li>Perfil público: nombre profesional, matrícula o credenciales, especialidad, foto, lugar de trabajo, WhatsApp, horario, años de experiencia, descripción, servicios y precios.</li>
+        <li>Ubicación del consultorio: ciudad, departamento, provincia, dirección y, si el médico lo autoriza, coordenadas GPS.</li>
+        <li>Estado de revisión (pendiente, aprobado o rechazado) y, si aplica, el motivo del rechazo visto por el administrador.</li>
+      </ul>
+
+      <h3>2.3 Clínicas</h3>
+      <ul>
+        <li>Cuenta con correo y contraseña.</li>
+        <li>Nombre del centro, dirección, teléfono o WhatsApp, descripción, servicios, hasta 10 fotos y, si lo autorizan, GPS del establecimiento.</li>
+        <li>Estado de revisión por el administrador, igual que en médicos.</li>
+      </ul>
+
+      <h3>2.4 Invitados</h3>
+      <p>
+        Pueden ver especialidades, clínicas y médicos. No se crea cuenta, no
+        se agendan citas y no se envían datos de perfil a Firebase Authentication.
+        La ubicación de búsqueda y el tema de la app pueden guardarse solo en el teléfono.
+      </p>
+
+      <h3>2.5 Datos técnicos</h3>
+      <ul>
+        <li>Token de notificaciones (FCM) para avisos de citas o de revisión de perfil.</li>
+        <li>Identificadores de instalación de Firebase.</li>
+        <li>Datos de uso básicos que Google Firebase puede registrar (Analytics), para estabilidad de la app.</li>
+        <li>Caché local de catálogos (médicos y clínicas) y preferencias (tema, ubicación favorita) en el dispositivo.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>3. Permisos del dispositivo</h2>
+      <ul>
+        <li><strong>Internet:</strong> para iniciar sesión, cargar el catálogo y guardar citas.</li>
+        <li><strong>Ubicación (aproximada y precisa):</strong> solo cuando un médico o una clínica elige registrar el GPS de su consultorio o centro. No rastreamos el movimiento del usuario.</li>
+        <li><strong>Cámara y galería:</strong> para la foto de perfil del médico o las fotos de la clínica. Las imágenes se comprimen antes de subirse.</li>
+        <li><strong>Notificaciones:</strong> avisos de nuevas citas o del estado de verificación del perfil.</li>
+      </ul>
+      <p>Puede denegar ubicación, cámara o notificaciones. Algunas funciones (GPS del consultorio, foto o avisos) no estarán disponibles.</p>
+    </section>
+
+    <section>
+      <h2>4. Para qué usamos los datos</h2>
+      <ul>
+        <li>Crear y mantener la cuenta (paciente, médico, clínica o administrador).</li>
+        <li>Mostrar perfiles publicados a quienes buscan atención en Bolivia.</li>
+        <li>Permitir que el administrador verifique, apruebe, oculte, rechace o elimine perfiles.</li>
+        <li>Agendar citas y que el médico vea quién reservó y el mensaje del paciente.</li>
+        <li>Abrir WhatsApp con el número que el médico o la clínica publicaron, o con soporte técnico.</li>
+        <li>Abrir mapas con la dirección o coordenadas del consultorio o clínica.</li>
+        <li>Enviar notificaciones relacionadas con el servicio.</li>
+        <li>Restablecer contraseña por correo, si la cuenta se creó con correo y contraseña.</li>
+      </ul>
+      <p>No vendemos datos personales. El pago de la consulta se indica como “en clínica”; CitaMedic no procesa tarjetas ni cobros dentro de la app.</p>
+    </section>
+
+    <section>
+      <h2>5. Con quién se comparten</h2>
+      <p>Los datos se tratan con estos encargados, en la medida necesaria:</p>
+      <ul>
+        <li><strong>Google Firebase</strong> (Authentication, Cloud Firestore, Cloud Storage, Cloud Functions, Cloud Messaging, Analytics e Installations): cuenta, perfiles, fotos, citas, tokens de aviso y métricas técnicas. Servidores de Google. Política: <a href="https://firebase.google.com/support/privacy" rel="noopener">firebase.google.com/support/privacy</a>.</li>
+        <li><strong>Google Sign-In:</strong> si elige “Continuar con Google”, Google nos entrega nombre y correo. Política: <a href="https://policies.google.com/privacy" rel="noopener">policies.google.com/privacy</a>.</li>
+        <li><strong>WhatsApp / Meta:</strong> si toca soporte o “escribir al médico”, se abre WhatsApp con el número y un mensaje. Eso queda bajo las reglas de WhatsApp.</li>
+        <li><strong>Google Maps:</strong> si pide “cómo llegar”, se abre Maps con la ubicación publicada.</li>
+      </ul>
+      <p>
+        El perfil publicado de un médico o clínica (nombre, especialidad, foto, lugar de trabajo, WhatsApp, servicios y ubicación) es visible para usuarios de la app.
+        Los datos de una cita los ven el paciente, el médico de esa cita y el administrador.
+      </p>
+    </section>
+
+    <section>
+      <h2>6. Conservación y caché</h2>
+      <ul>
+        <li>La cuenta y el perfil se guardan mientras la cuenta exista.</li>
+        <li>Las citas se conservan para el historial del paciente, el médico y el administrador.</li>
+        <li>Las fotos se almacenan en Firebase Storage asociadas a la cuenta.</li>
+        <li>En el teléfono hay caché de Firestore (hasta unos 40 MB) y un catálogo de médicos/clínicas que se reutiliza unos 15 minutos para gastar menos datos.</li>
+        <li>Preferencias locales (tema, ubicación favorita) permanecen en el dispositivo hasta que se desinstala la app o se borran los datos.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>7. Sus derechos</h2>
+      <p>Puede solicitar acceso, corrección o eliminación de sus datos escribiendo a
+        <a href="mailto:haroldisita666@gmail.com">haroldisita666@gmail.com</a>
+        o por WhatsApp de soporte.</p>
+      <ul>
+        <li>Desde la app, el paciente, el médico y la clínica pueden pulsar <strong>Eliminar cuenta</strong> para borrar perfil, citas y acceso.</li>
+        <li>El médico o la clínica pueden editar su perfil en la app.</li>
+        <li>El administrador puede eliminar un perfil médico y, cuando es posible, la cuenta de acceso asociada.</li>
+        <li>Puede cerrar sesión, dejar de usar Google o desinstalar la app.</li>
+        <li>Puede revocar el acceso de CitaMedic a su cuenta de Google desde la configuración de Google.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>8. Menores</h2>
+      <p>
+        CitaMedic está pensada para mayores de 18 años. No buscamos recabar
+        datos de menores de forma deliberada. Si un padre o tutor detecta una
+        cuenta de un menor, puede pedirnos que la borremos.
+      </p>
+    </section>
+
+    <section>
+      <h2>9. Seguridad</h2>
+      <p>
+        Usamos autenticación de Firebase, reglas de Firestore y Storage, y
+        contraseñas que no vemos en texto plano. Ningún sistema es 100 % seguro.
+        Recomendamos no compartir la contraseña y usar un correo real para
+        recuperar la cuenta.
+      </p>
+    </section>
+
+    <section>
+      <h2>10. Transferencias internacionales</h2>
+      <p>
+        Firebase y Google pueden procesar datos fuera de Bolivia. Al usar la
+        app, acepta ese tratamiento en los términos de esos proveedores, con
+        las salvaguardas que ellos publican.
+      </p>
+    </section>
+
+    <section>
+      <h2>11. Cambios</h2>
+      <p>
+        Si cambia esta política, actualizaremos la fecha de arriba. El uso
+        continuado de la app después de un cambio implica que ha leído la
+        versión vigente.
+      </p>
+    </section>
+
+    <section>
+      <h2>12. Contacto</h2>
+      <p>
+        CitaMedic<br>
+        Correo: <a href="mailto:haroldisita666@gmail.com">haroldisita666@gmail.com</a><br>
+        Soporte técnico (WhatsApp): <a href="https://wa.me/59173906744">+591 73906744</a><br>
+        País de operación: Bolivia
+      </p>
+    </section>
+  </main>
+  <footer>
+    Este documento describe el tratamiento de datos de la app CitaMedic tal como está diseñada (cuentas, perfiles, citas, fotos, ubicación y notificaciones).
+  </footer>
+</body>
+</html>

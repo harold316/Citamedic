@@ -1,6 +1,5 @@
-import 'dart:async';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
@@ -13,6 +12,7 @@ import '../models/doctor.dart';
 import '../models/doctor_review_status.dart';
 import '../models/medical_service.dart';
 import '../models/user_location.dart';
+import '../services/firebase_economy.dart';
 import '../services/storage_upload.dart';
 
 class DoctorsProvider extends ChangeNotifier {
@@ -23,7 +23,9 @@ class DoctorsProvider extends ChangeNotifier {
   String? _specialtyFilter;
   String? _departmentFilter;
   String? _provinceFilter;
-  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _subscription;
+  DateTime? _fetchedAt;
+  bool _includeUnpublished = false;
+  Future<void>? _refreshing;
 
   List<Doctor> get publishedRegistered =>
       _registered.where((doctor) => doctor.published).toList();
@@ -72,24 +74,106 @@ class DoctorsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void start() {
+  Future<void> refreshIfNeeded({
+    bool includeUnpublished = false,
+    bool force = false,
+    String? alsoUid,
+  }) {
+    final missingOwn =
+        alsoUid != null &&
+        alsoUid.isNotEmpty &&
+        !_registered.any((doctor) => doctor.id == alsoUid);
+    final stale =
+        _fetchedAt == null ||
+        DateTime.now().difference(_fetchedAt!) > FirebaseEconomy.catalogTtl;
+    final needsScope = includeUnpublished && !_includeUnpublished;
+    if (!force &&
+        !stale &&
+        !needsScope &&
+        !missingOwn &&
+        _registered.isNotEmpty) {
+      return Future.value();
+    }
+    return refresh(
+      includeUnpublished: includeUnpublished || _includeUnpublished,
+      alsoUid: alsoUid,
+      force: force,
+    );
+  }
+
+  Future<void> refresh({
+    bool includeUnpublished = false,
+    String? alsoUid,
+    bool force = false,
+  }) {
+    return _refreshing ??= _loadCatalog(
+      includeUnpublished: includeUnpublished,
+      alsoUid: alsoUid,
+      force: force,
+    ).whenComplete(() => _refreshing = null);
+  }
+
+  Future<void> _loadCatalog({
+    required bool includeUnpublished,
+    String? alsoUid,
+    required bool force,
+  }) async {
     if (Firebase.apps.isEmpty) {
       return;
     }
-    _subscription ??= FirebaseFirestore.instance
-        .collection(FirestorePaths.doctors)
-        .snapshots()
-        .listen(
-          (snapshot) {
-            _registered = snapshot.docs
-                .map((doc) => Doctor.fromMap(doc.id, doc.data()))
-                .toList();
-            notifyListeners();
-          },
-          onError: (error) {
-            debugPrint('No se pudieron leer médicos publicados: $error');
-          },
+    try {
+      Query<Map<String, dynamic>> query = FirebaseFirestore.instance
+          .collection(FirestorePaths.doctors);
+      if (!includeUnpublished) {
+        query = query.where('published', isEqualTo: true);
+      }
+      final key = FirebaseEconomy.catalogKey(
+        collection: FirestorePaths.doctors,
+        includeUnpublished: includeUnpublished,
+      );
+      final cached = await FirebaseEconomy.cachedQuery(query);
+      if (cached != null) {
+        await _applyCatalog(
+          cached,
+          includeUnpublished: includeUnpublished,
+          alsoUid: alsoUid,
         );
+        if (!force && await FirebaseEconomy.isCatalogFresh(key)) {
+          return;
+        }
+      }
+      final snapshot = await FirebaseEconomy.serverQuery(query);
+      await _applyCatalog(
+        snapshot,
+        includeUnpublished: includeUnpublished,
+        alsoUid: alsoUid,
+      );
+      await FirebaseEconomy.markCatalogFresh(key);
+    } catch (error) {
+      debugPrint('No se pudieron leer médicos publicados: $error');
+    }
+  }
+
+  Future<void> _applyCatalog(
+    QuerySnapshot<Map<String, dynamic>> snapshot, {
+    required bool includeUnpublished,
+    String? alsoUid,
+  }) async {
+    var items = snapshot.docs
+        .map((doc) => Doctor.fromMap(doc.id, doc.data()))
+        .toList();
+    if (alsoUid != null &&
+        alsoUid.isNotEmpty &&
+        !items.any((doctor) => doctor.id == alsoUid)) {
+      final own = await loadProfile(alsoUid);
+      if (own != null) {
+        items = [own, ...items];
+      }
+    }
+    _registered = items;
+    _includeUnpublished = includeUnpublished;
+    _fetchedAt = DateTime.now();
+    notifyListeners();
   }
 
   Future<Doctor?> loadProfile(String uid) async {
@@ -97,11 +181,9 @@ class DoctorsProvider extends ChangeNotifier {
       return null;
     }
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection(FirestorePaths.doctors)
-          .doc(uid)
-          .get()
-          .timeout(const Duration(seconds: 8));
+      final doc = await FirebaseEconomy.getDocument(
+        FirebaseFirestore.instance.collection(FirestorePaths.doctors).doc(uid),
+      ).timeout(const Duration(seconds: 8));
       if (!doc.exists || doc.data() == null) {
         return null;
       }
@@ -148,39 +230,45 @@ class DoctorsProvider extends ChangeNotifier {
 
   bool isFavorite(String doctorId) => _favoriteIds.contains(doctorId);
 
-  Doctor byId(String id) {
+  Doctor? findById(String id) {
+    if (id.isEmpty) {
+      return null;
+    }
     for (final doctor in doctors) {
       if (doctor.id == id) {
         return doctor;
       }
     }
-    return _registered.firstWhere((doctor) => doctor.id == id);
+    for (final doctor in _registered) {
+      if (doctor.id == id) {
+        return doctor;
+      }
+    }
+    return null;
+  }
+
+  Doctor byId(String id) {
+    final doctor = findById(id);
+    if (doctor != null) {
+      return doctor;
+    }
+    throw StateError('Médico no encontrado: $id');
   }
 
   List<Doctor> get favorites =>
       doctors.where((doctor) => _favoriteIds.contains(doctor.id)).toList();
 
   List<Doctor> nearby(UserLocation? location) {
+    return _nearbyStrict(location);
+  }
+
+  List<Doctor> _nearbyStrict(UserLocation? location) {
     final all = doctors;
     if (location == null) {
       return all;
     }
-    final exact = all
-        .where((doctor) => doctor.matchesLocation(location))
-        .toList();
-    if (exact.isNotEmpty) {
-      return exact;
-    }
-    final sameProvince = all
-        .where((doctor) => doctor.matchesLocation(location, sameProvince: true))
-        .toList();
-    if (sameProvince.isNotEmpty) {
-      return sameProvince;
-    }
     return all
-        .where(
-          (doctor) => doctor.matchesLocation(location, sameDepartment: true),
-        )
+        .where((doctor) => doctor.matchesLocation(location))
         .toList();
   }
 
@@ -299,6 +387,49 @@ class DoctorsProvider extends ChangeNotifier {
     await saveProfile(updated);
   }
 
+  Future<void> deleteDoctor(String doctorId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || !isAdminEmail(user.email)) {
+      throw StateError('Solo un administrador puede eliminar un perfil.');
+    }
+    if (doctorId.isEmpty) {
+      throw StateError('No se encontró el perfil a eliminar.');
+    }
+    if (Firebase.apps.isEmpty) {
+      throw StateError('Firebase no está inicializado.');
+    }
+
+    final db = FirebaseFirestore.instance;
+    await db.collection(FirestorePaths.doctors).doc(doctorId).delete();
+    try {
+      await db.collection(FirestorePaths.users).doc(doctorId).delete();
+    } catch (error) {
+      debugPrint('No se pudo borrar users/$doctorId: $error');
+    }
+    try {
+      final appointments = await db
+          .collection(FirestorePaths.appointments)
+          .where('doctorId', isEqualTo: doctorId)
+          .get();
+      for (final doc in appointments.docs) {
+        await doc.reference.delete();
+      }
+    } catch (error) {
+      debugPrint('No se pudieron borrar citas de $doctorId: $error');
+    }
+
+    try {
+      await FirebaseFunctions.instanceFor(region: 'us-central1')
+          .httpsCallable('deleteDoctorAccount')
+          .call(<String, dynamic>{'uid': doctorId});
+    } catch (error) {
+      debugPrint('No se pudo borrar Auth de $doctorId: $error');
+    }
+
+    _registered = _registered.where((item) => item.id != doctorId).toList();
+    notifyListeners();
+  }
+
   List<Doctor> filteredIn(UserLocation? location) {
     return doctors.where((doctor) {
       final matchesCountry =
@@ -363,9 +494,4 @@ class DoctorsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  @override
-  void dispose() {
-    _subscription?.cancel();
-    super.dispose();
-  }
 }

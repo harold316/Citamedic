@@ -12,6 +12,7 @@ import '../providers/doctors_provider.dart';
 import '../providers/session_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/notifications_bell_button.dart';
+import '../widgets/support_tech_button.dart';
 import '../widgets/theme_toggle_button.dart';
 import 'admin_clinic_review_screen.dart';
 import 'admin_doctor_review_screen.dart';
@@ -28,6 +29,20 @@ class AdminDashboardScreen extends StatefulWidget {
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   _AdminFilter _filter = _AdminFilter.pending;
   final _query = TextEditingController();
+
+  Future<void> _reload() async {
+    await Future.wait([
+      context.read<DoctorsProvider>().refresh(
+        includeUnpublished: true,
+        force: true,
+      ),
+      context.read<ClinicsProvider>().refresh(
+        includeUnpublished: true,
+        force: true,
+      ),
+      context.read<AppointmentsProvider>().loadAll(force: true),
+    ]);
+  }
 
   @override
   void dispose() {
@@ -70,8 +85,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       appBar: AppBar(
         title: const Text('Panel de administración'),
         actions: [
-          const NotificationsBellButton(),
-          const ThemeToggleButton(),
+            const NotificationsBellButton(),
+            const SupportTechIconButton(),
+            const ThemeToggleButton(),
           IconButton(
             tooltip: 'Cerrar sesión',
             onPressed: () async {
@@ -82,7 +98,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ),
         ],
       ),
-      body: ListView(
+      body: RefreshIndicator(
+        onRefresh: _reload,
+        child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
         children: [
           Text(
@@ -250,6 +268,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               ),
             ),
         ],
+        ),
       ),
     );
   }

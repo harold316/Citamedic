@@ -34,6 +34,7 @@ class AppointmentSummaryScreen extends StatefulWidget {
 class _AppointmentSummaryScreenState extends State<AppointmentSummaryScreen> {
   late DateTime _date;
   late TimeOfDay _time;
+  final _message = TextEditingController();
 
   @override
   void initState() {
@@ -41,6 +42,12 @@ class _AppointmentSummaryScreenState extends State<AppointmentSummaryScreen> {
     final tomorrow = DateTime.now().add(const Duration(days: 1));
     _date = DateTime(tomorrow.year, tomorrow.month, tomorrow.day);
     _time = const TimeOfDay(hour: 10, minute: 0);
+  }
+
+  @override
+  void dispose() {
+    _message.dispose();
+    super.dispose();
   }
 
   DateTime get _dateTime => DateTime(
@@ -98,7 +105,19 @@ class _AppointmentSummaryScreenState extends State<AppointmentSummaryScreen> {
           _InfoRow(label: 'Duración', value: '${service.durationMinutes} min'),
           _InfoRow(label: 'Precio', value: formatPrice(service.price)),
           const _InfoRow(label: 'Pago', value: 'En clínica'),
-          const SizedBox(height: 28),
+          const SizedBox(height: 18),
+          const _SectionTitle('Mensaje para el médico'),
+          TextField(
+            controller: _message,
+            minLines: 3,
+            maxLines: 5,
+            maxLength: 240,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: const InputDecoration(
+              hintText: 'Opcional. Motivo de la consulta, síntomas o un recado.',
+            ),
+          ),
+          const SizedBox(height: 20),
           if (context.watch<AuthProvider>().isGuest)
             PrimaryPillButton(
               label: 'Inicia sesión para agendar',
@@ -161,6 +180,7 @@ class _AppointmentSummaryScreenState extends State<AppointmentSummaryScreen> {
           dateTime: _dateTime,
           durationMinutes: service.durationMinutes,
           price: service.price,
+          patientMessage: _message.text.trim(),
         ),
       );
     } catch (error) {

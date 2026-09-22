@@ -18,12 +18,15 @@ import '../providers/doctors_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/gps.dart';
 import '../utils/maps.dart';
+import '../services/google_auth.dart';
+import '../widgets/app_logo.dart';
 import '../widgets/clinic_photo_grid.dart';
 import '../widgets/doctor_medical_card.dart';
 import '../widgets/google_logo.dart';
 import '../widgets/gps_capture_tile.dart';
 import '../widgets/location_selectors.dart';
 import '../widgets/primary_pill_button.dart';
+import '../widgets/support_tech_button.dart';
 import '../widgets/service_editor_list.dart';
 import '../widgets/specialty_category_dropdown.dart';
 import '../widgets/theme_toggle_button.dart';
@@ -39,7 +42,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmController = TextEditingController();
   final _credentialsController = TextEditingController();
   final _hospitalController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -54,10 +56,10 @@ class _LoginScreenState extends State<LoginScreen> {
   Uint8List? _photoBytes;
   final _clinicPhotos = <ClinicPhotoDraft>[];
   final _clinicServices = <ServiceDraft>[];
-  String _clinicCountry = defaultCountry;
-  String _clinicDepartment = defaultDepartment;
-  String _clinicProvince = defaultProvince;
-  String _clinicCity = defaultCity;
+  String _country = defaultCountry;
+  String _department = defaultDepartment;
+  String _province = defaultProvince;
+  String _city = defaultCity;
   double? _clinicLatitude;
   double? _clinicLongitude;
   bool _clinicLocating = false;
@@ -86,7 +88,6 @@ class _LoginScreenState extends State<LoginScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _confirmController.dispose();
     _credentialsController.dispose();
     _hospitalController.dispose();
     _phoneController.dispose();
@@ -108,19 +109,14 @@ class _LoginScreenState extends State<LoginScreen> {
           children: [
             const Align(
               alignment: Alignment.centerRight,
-              child: ThemeToggleButton(),
-            ),
-            Center(
-              child: Container(
-                width: 72,
-                height: 72,
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.add, color: Colors.white, size: 40),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ThemeToggleButton(),
+                ],
               ),
             ),
+            const Center(child: AppLogo(size: 112)),
             const SizedBox(height: 16),
             Text(
               'CitaMedic',
@@ -202,38 +198,48 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ],
             const SizedBox(height: 28),
-            if (!_hidePrimaryButton)
-              PrimaryPillButton(
-                label: _loading ? 'Espera...' : _buttonLabel,
-                onPressed: _loading ? null : _submit,
+            PrimaryPillButton(
+              label: _loading ? 'Espera...' : _buttonLabel,
+              onPressed: _loading ? null : _submit,
+            ),
+            if (_registerMode &&
+                (_role == UserRole.doctor || _role == UserRole.patient)) ...[
+              const SizedBox(height: 12),
+              Text(
+                'o',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.of(context).muted),
               ),
-            if (!_registerMode || _role == UserRole.patient) ...[
-              if (_registerMode && _role == UserRole.patient) ...[
-                _GoogleSignInButton(
-                  loading: _loading,
-                  onPressed: _signInWithGoogle,
+              const SizedBox(height: 12),
+              _GoogleSignInButton(
+                loading: _loading,
+                enabled: auth.isReady,
+                onPressed: _role == UserRole.doctor
+                    ? _registerDoctorWithGoogle
+                    : _signInWithGoogle,
+              ),
+            ],
+            if (!_registerMode) ...[
+              const SizedBox(height: 12),
+              _GoogleSignInButton(
+                loading: _loading,
+                enabled: auth.isReady,
+                onPressed: _signInWithGoogle,
+              ),
+              const SizedBox(height: 12),
+              SecondaryPillButton(
+                label: _loading ? 'Espera...' : 'Continuar como invitado',
+                onPressed: _loading ? null : _continueAsGuest,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Podrás ver médicos y especialidades, sin agendar citas.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.of(context).muted,
+                  fontSize: 13,
                 ),
-              ] else if (!_registerMode) ...[
-                const SizedBox(height: 12),
-                _GoogleSignInButton(
-                  loading: _loading,
-                  onPressed: _signInWithGoogle,
-                ),
-                const SizedBox(height: 12),
-                SecondaryPillButton(
-                  label: _loading ? 'Espera...' : 'Continuar como invitado',
-                  onPressed: _loading ? null : _continueAsGuest,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Podrás ver médicos y especialidades, sin agendar citas.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppColors.of(context).muted,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
+              ),
             ],
             if (!_registerMode)
               TextButton(
@@ -253,6 +259,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     : '¿No tienes cuenta? Regístrate',
               ),
             ),
+            const SizedBox(height: 8),
+            const SupportTechButton(),
           ],
         ),
       ),
@@ -261,13 +269,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   String get _headline {
     if (_registerMode && _role == UserRole.doctor) {
-      return 'Completa tu cuenta y tu perfil profesional. Eso es lo que verán los pacientes.';
+      return 'Crea tu cuenta con correo electrónico o con Google y completa tu perfil profesional.';
     }
     if (_registerMode && _role == UserRole.clinic) {
       return 'Registra tu clínica o centro médico. Un administrador la revisará antes de publicarla.';
     }
     if (_registerMode) {
-      return 'Elige si eres paciente, médico o clínica. Los pacientes se registran con Google.';
+      return 'Crea tu cuenta con correo electrónico o con Google para agendar citas.';
     }
     return 'Inicia sesión para continuar.';
   }
@@ -284,9 +292,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     return 'Crear cuenta';
   }
-
-  bool get _hidePrimaryButton =>
-      _registerMode && _role == UserRole.patient;
 
   List<Widget> _accountFields(AuthProvider auth) {
     return [
@@ -306,7 +311,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 role: UserRole.patient,
                 selected: _role == UserRole.patient,
                 icon: Icons.person_outline,
-                subtitle: 'Regístrate con Google',
+                subtitle: 'Correo o Google',
                 onTap: () => setState(() => _role = UserRole.patient),
               ),
             ),
@@ -316,7 +321,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 role: UserRole.doctor,
                 selected: _role == UserRole.doctor,
                 icon: Icons.medical_services_outlined,
-                subtitle: 'Publica tu perfil profesional',
+                subtitle: 'Correo o Google',
                 onTap: () => setState(() => _role = UserRole.doctor),
               ),
             ),
@@ -331,83 +336,60 @@ class _LoginScreenState extends State<LoginScreen> {
           onTap: () => setState(() => _role = UserRole.clinic),
         ),
         const SizedBox(height: 16),
-        if (_role == UserRole.patient)
-          Text(
-            'Los pacientes crean su cuenta con Google. Así pueden agendar citas y ver su historial.',
-            style: TextStyle(color: AppColors.of(context).muted),
-          )
-        else ...[
-          TextField(
-            key: const ValueKey('register-name'),
-            controller: _nameController,
-            textCapitalization: TextCapitalization.words,
-            textInputAction: TextInputAction.next,
-            decoration: InputDecoration(
-              labelText: _role == UserRole.clinic
-                  ? 'Nombre de la clínica'
-                  : 'Nombre',
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
-      ],
-      if (!_registerMode ||
-          _role == UserRole.doctor ||
-          _role == UserRole.clinic) ...[
         TextField(
-          key: const ValueKey('register-email'),
-          controller: _emailController,
-          keyboardType: TextInputType.emailAddress,
-          autocorrect: false,
+          key: const ValueKey('register-name'),
+          controller: _nameController,
+          textCapitalization: TextCapitalization.words,
           textInputAction: TextInputAction.next,
-          autofillHints: const [AutofillHints.email],
-          decoration: const InputDecoration(labelText: 'Correo'),
+          decoration: InputDecoration(
+            labelText: _role == UserRole.clinic
+                ? 'Nombre de la clínica'
+                : 'Nombre',
+            hintText: _role == UserRole.doctor
+                ? 'Ej. Dr. Juan Pérez'
+                : _role == UserRole.patient
+                ? 'Ej. Ana Torres'
+                : null,
+          ),
         ),
         const SizedBox(height: 12),
-        TextField(
-          key: const ValueKey('register-password'),
-          controller: _passwordController,
-          obscureText: _obscurePassword,
-          textInputAction: _registerMode
-              ? TextInputAction.next
-              : TextInputAction.done,
-          autofillHints: const [AutofillHints.password],
-          onSubmitted: (_) {
-            if (!_registerMode && !_loading) {
-              _submit();
-            }
-          },
-          decoration: InputDecoration(
-            labelText: 'Contraseña',
-            suffixIcon: IconButton(
-              onPressed: () {
-                setState(() => _obscurePassword = !_obscurePassword);
-              },
-              icon: Icon(
-                _obscurePassword
-                    ? Icons.visibility_outlined
-                    : Icons.visibility_off_outlined,
-                color: AppColors.primary,
-              ),
+      ],
+      TextField(
+        key: const ValueKey('register-email'),
+        controller: _emailController,
+        keyboardType: TextInputType.emailAddress,
+        autocorrect: false,
+        textInputAction: TextInputAction.next,
+        autofillHints: const [AutofillHints.email],
+        decoration: const InputDecoration(labelText: 'Correo electrónico'),
+      ),
+      const SizedBox(height: 12),
+      TextField(
+        key: const ValueKey('register-password'),
+        controller: _passwordController,
+        obscureText: _obscurePassword,
+        textInputAction: TextInputAction.done,
+        autofillHints: const [AutofillHints.password],
+        onSubmitted: (_) {
+          if (!_loading) {
+            _submit();
+          }
+        },
+        decoration: InputDecoration(
+          labelText: 'Contraseña',
+          suffixIcon: IconButton(
+            onPressed: () {
+              setState(() => _obscurePassword = !_obscurePassword);
+            },
+            icon: Icon(
+              _obscurePassword
+                  ? Icons.visibility_outlined
+                  : Icons.visibility_off_outlined,
+              color: AppColors.primary,
             ),
           ),
         ),
-        if (_registerMode) ...[
-          const SizedBox(height: 12),
-          TextField(
-            key: const ValueKey('register-confirm'),
-            controller: _confirmController,
-            obscureText: _obscurePassword,
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) {
-              if (!_loading) {
-                _submit();
-              }
-            },
-            decoration: const InputDecoration(labelText: 'Confirmar contraseña'),
-          ),
-        ],
-      ],
+      ),
     ];
   }
 
@@ -423,6 +405,7 @@ class _LoginScreenState extends State<LoginScreen> {
       const SizedBox(height: 16),
       _UploadTile(
         label: 'Foto de perfil',
+        hint: 'Foto de frente con fondo claro y ropa de trabajo.',
         icon: Icons.photo_camera_outlined,
         filled: _photoBytes != null,
         onTap: _pickImage,
@@ -436,13 +419,38 @@ class _LoginScreenState extends State<LoginScreen> {
       TextField(
         key: const ValueKey('register-credentials'),
         controller: _credentialsController,
-        decoration: const InputDecoration(labelText: 'Matrícula o credenciales'),
+        decoration: const InputDecoration(
+          labelText: 'Matrícula o credenciales',
+          hintText: 'Ej. Especialidad en Santa Cruz. Mat. Prof. ----',
+        ),
       ),
       const SizedBox(height: 12),
       TextField(
         key: const ValueKey('register-hospital'),
         controller: _hospitalController,
-        decoration: const InputDecoration(labelText: 'Clínica u hospital'),
+        decoration: const InputDecoration(
+          labelText: 'Lugar de trabajo',
+          hintText: 'Clínica, hospital o establecimiento de salud',
+        ),
+      ),
+      const SizedBox(height: 16),
+      Text(
+        'Ubicación',
+        style: TextStyle(
+          fontWeight: FontWeight.w800,
+          color: AppColors.of(context).text,
+        ),
+      ),
+      const SizedBox(height: 10),
+      LocationSelectors(
+        country: _country,
+        department: _department,
+        province: _province,
+        city: _city,
+        onCountryChanged: _onCountryChanged,
+        onDepartmentChanged: _onDepartmentChanged,
+        onProvinceChanged: _onProvinceChanged,
+        onCityChanged: (value) => setState(() => _city = value),
       ),
       const SizedBox(height: 12),
       TextField(
@@ -459,10 +467,12 @@ class _LoginScreenState extends State<LoginScreen> {
       TextField(
         key: const ValueKey('register-about'),
         controller: _aboutController,
-        maxLines: 3,
+        maxLines: 5,
         decoration: const InputDecoration(
           labelText: 'Acerca de ti',
           alignLabelWithHint: true,
+          hintText:
+              'Ej. Médico especialista en [Tu Especialidad] con más de [X] años de experiencia clínica. Me enfoco en brindar diagnósticos precisos y tratamientos personalizados con un trato humano, empático y de escucha activa.',
         ),
       ),
     ];
@@ -493,14 +503,14 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       const SizedBox(height: 10),
       LocationSelectors(
-        country: _clinicCountry,
-        department: _clinicDepartment,
-        province: _clinicProvince,
-        city: _clinicCity,
-        onCountryChanged: _onClinicCountryChanged,
-        onDepartmentChanged: _onClinicDepartmentChanged,
-        onProvinceChanged: _onClinicProvinceChanged,
-        onCityChanged: (value) => setState(() => _clinicCity = value),
+        country: _country,
+        department: _department,
+        province: _province,
+        city: _city,
+        onCountryChanged: _onCountryChanged,
+        onDepartmentChanged: _onDepartmentChanged,
+        onProvinceChanged: _onProvinceChanged,
+        onCityChanged: (value) => setState(() => _city = value),
       ),
       const SizedBox(height: 12),
       GpsCaptureTile(
@@ -549,11 +559,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = _passwordController.text;
     final name = _nameController.text.trim();
 
-    if (_registerMode && _role == UserRole.patient) {
-      await _signInWithGoogle();
-      return;
-    }
-
     if (email.isEmpty || password.isEmpty) {
       setState(() => _error = 'Escribe tu correo y contraseña.');
       return;
@@ -566,24 +571,10 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       return;
     }
-    if (_registerMode && password != _confirmController.text) {
-      setState(() => _error = 'Las contraseñas no coinciden.');
-      return;
-    }
     if (_registerMode && _role == UserRole.doctor) {
-      if (_hospitalController.text.trim().isEmpty) {
-        setState(() => _error = 'Escribe tu clínica u hospital.');
-        return;
-      }
-      if (_photoFile == null) {
-        setState(() => _error = 'Sube tu foto de perfil.');
-        return;
-      }
-      final phone = _phoneController.text.replaceAll(RegExp(r'\D'), '');
-      if (phone.length < 8) {
-        setState(
-          () => _error = 'Escribe tu WhatsApp con código de país, por ejemplo 18095551234.',
-        );
+      final profileError = _doctorProfileError();
+      if (profileError != null) {
+        setState(() => _error = profileError);
         return;
       }
     }
@@ -679,14 +670,83 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  String? _doctorProfileError() {
+    if (_nameController.text.trim().isEmpty) {
+      return 'Escribe tu nombre.';
+    }
+    if (_hospitalController.text.trim().isEmpty) {
+      return 'Escribe tu lugar de trabajo.';
+    }
+    if (_photoFile == null) {
+      return 'Sube tu foto de perfil.';
+    }
+    final phone = _phoneController.text.replaceAll(RegExp(r'\D'), '');
+    if (phone.length < 8) {
+      return 'Escribe el número con código de país, por ejemplo 18095551234.';
+    }
+    return null;
+  }
+
+  Future<void> _registerDoctorWithGoogle() async {
+    final profileError = _doctorProfileError();
+    if (profileError != null) {
+      setState(() => _error = profileError);
+      return;
+    }
+    final auth = context.read<AuthProvider>();
+    if (!auth.isReady) {
+      setState(() {
+        _error =
+            'Firebase no está listo. Reinicia la app en un emulador o celular Android.';
+      });
+      return;
+    }
+    final doctors = context.read<DoctorsProvider>();
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      doctors.rememberRegistration(
+        profile: _buildDoctorProfile('pending'),
+        photoBytes: _photoBytes,
+        photoFile: _photoFile,
+      );
+      await auth.signInWithGoogle(
+        intendedRole: UserRole.doctor,
+        displayName: _nameController.text.trim(),
+        afterCreate: (uid) => _publishDoctorCard(uid, doctors),
+      );
+    } on GoogleSignInCanceled {
+      // El usuario cerró el selector de cuentas.
+    } catch (error) {
+      if (mounted) {
+        setState(() => _error = auth.messageFor(error));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
   Future<void> _signInWithGoogle() async {
     final auth = context.read<AuthProvider>();
+    if (!auth.isReady) {
+      setState(() {
+        _error =
+            'Firebase no está listo. Reinicia la app en un emulador o celular Android.';
+      });
+      return;
+    }
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
       await auth.signInWithGoogle();
+    } on GoogleSignInCanceled {
+      // El usuario cerró el selector de cuentas.
     } catch (error) {
       if (mounted) {
         setState(() => _error = auth.messageFor(error));
@@ -713,7 +773,10 @@ class _LoginScreenState extends State<LoginScreen> {
       about: _aboutController.text.trim(),
       hospital: _hospitalController.text.trim(),
       phone: _phoneController.text.trim(),
-      city: defaultCity,
+      city: _city,
+      country: _country,
+      department: _department,
+      province: _province,
       published: false,
       reviewStatus: DoctorReviewStatus.pending,
       submittedAt: DateTime.now(),
@@ -761,13 +824,13 @@ class _LoginScreenState extends State<LoginScreen> {
     return Clinic(
       id: uid,
       name: _nameController.text.trim(),
-      city: _clinicCity,
+      city: _city,
       address: _hospitalController.text.trim(),
       photoUrl: defaultClinicPhoto,
       rating: 5,
-      country: _clinicCountry,
-      department: _clinicDepartment,
-      province: _clinicProvince,
+      country: _country,
+      department: _department,
+      province: _province,
       phone: _phoneController.text.trim(),
       about: _aboutController.text.trim(),
       services: services,
@@ -876,30 +939,30 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
-  void _onClinicCountryChanged(String value) {
+  void _onCountryChanged(String value) {
     final department = catalogDepartments(value).first;
     final province = catalogProvinces(value, department).first;
     setState(() {
-      _clinicCountry = value;
-      _clinicDepartment = department;
-      _clinicProvince = province;
-      _clinicCity = catalogCities(value, department, province).first;
+      _country = value;
+      _department = department;
+      _province = province;
+      _city = catalogCities(value, department, province).first;
     });
   }
 
-  void _onClinicDepartmentChanged(String value) {
-    final province = catalogProvinces(_clinicCountry, value).first;
+  void _onDepartmentChanged(String value) {
+    final province = catalogProvinces(_country, value).first;
     setState(() {
-      _clinicDepartment = value;
-      _clinicProvince = province;
-      _clinicCity = catalogCities(_clinicCountry, value, province).first;
+      _department = value;
+      _province = province;
+      _city = catalogCities(_country, value, province).first;
     });
   }
 
-  void _onClinicProvinceChanged(String value) {
+  void _onProvinceChanged(String value) {
     setState(() {
-      _clinicProvince = value;
-      _clinicCity = catalogCities(_clinicCountry, _clinicDepartment, value).first;
+      _province = value;
+      _city = catalogCities(_country, _department, value).first;
     });
   }
 
@@ -1018,9 +1081,11 @@ class _GoogleSignInButton extends StatelessWidget {
   const _GoogleSignInButton({
     required this.loading,
     required this.onPressed,
+    this.enabled = true,
   });
 
   final bool loading;
+  final bool enabled;
   final VoidCallback onPressed;
 
   @override
@@ -1028,7 +1093,7 @@ class _GoogleSignInButton extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
-        onPressed: loading ? null : onPressed,
+        onPressed: loading || !enabled ? null : onPressed,
         icon: const GoogleLogo(size: 22),
         label: Text(loading ? 'Espera...' : 'Continuar con Google'),
       ),
@@ -1100,9 +1165,11 @@ class _UploadTile extends StatelessWidget {
     required this.icon,
     required this.filled,
     required this.onTap,
+    this.hint,
   });
 
   final String label;
+  final String? hint;
   final IconData icon;
   final bool filled;
   final VoidCallback onTap;
@@ -1130,6 +1197,14 @@ class _UploadTile extends StatelessWidget {
                   color: colors.text,
                 ),
               ),
+              if (hint != null && hint!.trim().isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  hint!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: colors.muted, fontSize: 13),
+                ),
+              ],
             ],
           ),
         ),

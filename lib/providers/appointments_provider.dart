@@ -30,6 +30,15 @@ class AppointmentsProvider extends ChangeNotifier {
         .toList();
   }
 
+  Appointment? byId(String id) {
+    for (final item in _appointments) {
+      if (item.id == id) {
+        return item;
+      }
+    }
+    return null;
+  }
+
   void watch({required String uid, required bool asDoctor}) {
     if (uid.isEmpty || Firebase.apps.isEmpty) {
       stop();
@@ -69,36 +78,32 @@ class AppointmentsProvider extends ChangeNotifier {
         );
   }
 
-  void watchAll() {
+  Future<void> loadAll({bool force = false}) async {
     if (Firebase.apps.isEmpty) {
       stop();
       return;
     }
-    if (_watchingAll) {
+    if (_watchingAll && !force && _appointments.isNotEmpty) {
       return;
     }
     _watchingAll = true;
     _watchingUid = null;
     _watchingAsDoctor = null;
     _subscription?.cancel();
-    _subscription = FirebaseFirestore.instance
-        .collection(FirestorePaths.appointments)
-        .snapshots()
-        .listen(
-          (snapshot) {
-            _appointments
-              ..clear()
-              ..addAll(
-                snapshot.docs.map(
-                  (doc) => Appointment.fromMap(doc.id, doc.data()),
-                ),
-              );
-            notifyListeners();
-          },
-          onError: (error) {
-            debugPrint('No se pudieron leer todas las citas: $error');
-          },
+    _subscription = null;
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection(FirestorePaths.appointments)
+          .get();
+      _appointments
+        ..clear()
+        ..addAll(
+          snapshot.docs.map((doc) => Appointment.fromMap(doc.id, doc.data())),
         );
+      notifyListeners();
+    } catch (error) {
+      debugPrint('No se pudieron leer todas las citas: $error');
+    }
   }
 
   void stop() {
@@ -133,7 +138,9 @@ class AppointmentsProvider extends ChangeNotifier {
       unawaited(
         PushNotifications.instance.showLocal(
           title: 'Nueva cita en CitaMedic',
-          body: '${appointment.patientName} agendó ${appointment.serviceName}.',
+          body: appointment.hasPatientMessage
+              ? '${appointment.patientName} agendó ${appointment.serviceName}. ${appointment.patientMessage}'
+              : '${appointment.patientName} agendó ${appointment.serviceName}.',
           payload: 'appointment',
           id: appointment.id.hashCode,
         ),
@@ -156,6 +163,89 @@ class AppointmentsProvider extends ChangeNotifier {
         .collection(FirestorePaths.appointments)
         .doc(appointment.id)
         .set(appointment.toMap());
+  }
+
+  Future<void> accept(String id) async {
+    final current = byId(id);
+    if (current == null) {
+      return;
+    }
+    await _patch(
+      current.copyWith(status: AppointmentStatus.accepted),
+      {
+        'status': AppointmentStatus.accepted.id,
+      },
+    );
+  }
+
+  Future<void> reschedule(String id, DateTime dateTime) async {
+    final current = byId(id);
+    if (current == null) {
+      return;
+    }
+    await _patch(
+      current.copyWith(
+        dateTime: dateTime,
+        status: AppointmentStatus.rescheduled,
+      ),
+      {
+        'dateTime': Timestamp.fromDate(dateTime),
+        'status': AppointmentStatus.rescheduled.id,
+      },
+    );
+  }
+
+  Future<void> _patch(
+    Appointment updated,
+    Map<String, Object> data,
+  ) async {
+    final index = _appointments.indexWhere((item) => item.id == updated.id);
+    Appointment? previous;
+    if (index >= 0) {
+      previous = _appointments[index];
+      _appointments[index] = updated;
+      notifyListeners();
+    }
+    if (Firebase.apps.isEmpty || updated.id.isEmpty) {
+      return;
+    }
+    try {
+      await FirebaseFirestore.instance
+          .collection(FirestorePaths.appointments)
+          .doc(updated.id)
+          .update(data);
+    } catch (error) {
+      if (previous != null && index >= 0) {
+        _appointments[index] = previous;
+        notifyListeners();
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> remove(String id) async {
+    final index = _appointments.indexWhere((item) => item.id == id);
+    Appointment? removed;
+    if (index >= 0) {
+      removed = _appointments.removeAt(index);
+      notifyListeners();
+    }
+    if (Firebase.apps.isEmpty || id.isEmpty) {
+      return;
+    }
+    try {
+      await FirebaseFirestore.instance
+          .collection(FirestorePaths.appointments)
+          .doc(id)
+          .delete();
+    } catch (error) {
+      if (removed != null) {
+        final restoreAt = index.clamp(0, _appointments.length);
+        _appointments.insert(restoreAt, removed);
+        notifyListeners();
+      }
+      rethrow;
+    }
   }
 
   @override

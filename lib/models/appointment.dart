@@ -1,5 +1,35 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+enum AppointmentStatus {
+  pending,
+  accepted,
+  rescheduled;
+
+  String get id => name;
+
+  String get label {
+    switch (this) {
+      case AppointmentStatus.pending:
+        return 'Pendiente';
+      case AppointmentStatus.accepted:
+        return 'Aceptada';
+      case AppointmentStatus.rescheduled:
+        return 'Reprogramada';
+    }
+  }
+
+  static AppointmentStatus fromId(String? raw) {
+    switch (raw) {
+      case 'accepted':
+        return AppointmentStatus.accepted;
+      case 'rescheduled':
+        return AppointmentStatus.rescheduled;
+      default:
+        return AppointmentStatus.pending;
+    }
+  }
+}
+
 class Appointment {
   final String id;
   final String doctorId;
@@ -12,6 +42,8 @@ class Appointment {
   final int durationMinutes;
   final double price;
   final String paymentMethod;
+  final String patientMessage;
+  final AppointmentStatus status;
 
   const Appointment({
     required this.id,
@@ -25,7 +57,43 @@ class Appointment {
     this.patientEmail = '',
     this.serviceName = '',
     this.paymentMethod = 'En clínica',
+    this.patientMessage = '',
+    this.status = AppointmentStatus.pending,
   });
+
+  bool get hasPatientMessage => patientMessage.trim().isNotEmpty;
+
+  bool get isPending => status == AppointmentStatus.pending;
+
+  bool get isPast => dateTime.isBefore(DateTime.now());
+
+  String get statusLabel {
+    if (isPast && !isPending) {
+      return 'Pasada';
+    }
+    return status.label;
+  }
+
+  Appointment copyWith({
+    DateTime? dateTime,
+    AppointmentStatus? status,
+  }) {
+    return Appointment(
+      id: id,
+      doctorId: doctorId,
+      patientId: patientId,
+      patientName: patientName,
+      patientEmail: patientEmail,
+      serviceId: serviceId,
+      serviceName: serviceName,
+      dateTime: dateTime ?? this.dateTime,
+      durationMinutes: durationMinutes,
+      price: price,
+      paymentMethod: paymentMethod,
+      patientMessage: patientMessage,
+      status: status ?? this.status,
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -39,6 +107,8 @@ class Appointment {
       'durationMinutes': durationMinutes,
       'price': price,
       'paymentMethod': paymentMethod,
+      'status': status.id,
+      if (hasPatientMessage) 'patientMessage': patientMessage.trim(),
     };
   }
 
@@ -59,6 +129,8 @@ class Appointment {
       durationMinutes: (data['durationMinutes'] as num?)?.toInt() ?? 30,
       price: (data['price'] as num?)?.toDouble() ?? 0,
       paymentMethod: data['paymentMethod'] as String? ?? 'En clínica',
+      patientMessage: (data['patientMessage'] as String?)?.trim() ?? '',
+      status: AppointmentStatus.fromId(data['status'] as String?),
     );
   }
 

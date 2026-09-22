@@ -13,6 +13,12 @@ class NotificationsBellButton extends StatelessWidget {
     final unread = context.watch<NotificationsProvider>().unreadCount;
     return IconButton(
       tooltip: 'Notificaciones',
+      visualDensity: VisualDensity.compact,
+      style: IconButton.styleFrom(
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        minimumSize: const Size(40, 40),
+        padding: const EdgeInsets.all(6),
+      ),
       onPressed: () {
         Navigator.of(context).push(
           MaterialPageRoute<void>(

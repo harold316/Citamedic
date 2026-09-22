@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../models/doctor.dart';
 import '../theme/app_theme.dart';
 import '../utils/maps.dart';
-import '../utils/whatsapp.dart';
 
 class OfficeLocationCard extends StatelessWidget {
   const OfficeLocationCard({
@@ -76,14 +75,6 @@ class OfficeLocationCard extends StatelessWidget {
               ),
               label: const Text('Añadir ubicación'),
             ),
-          if (doctor.hasWhatsApp) ...[
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: () => openDoctorWhatsApp(doctor),
-              icon: const Icon(Icons.chat, color: AppColors.whatsapp),
-              label: const Text('Escribir por WhatsApp'),
-            ),
-          ],
         ],
       ),
     );

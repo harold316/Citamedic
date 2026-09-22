@@ -11,10 +11,12 @@ class DoctorCarouselCard extends StatelessWidget {
     required this.isFavorite,
     required this.onTap,
     required this.onFavorite,
+    this.selected = false,
   });
 
   final Doctor doctor;
   final bool isFavorite;
+  final bool selected;
   final VoidCallback onTap;
   final VoidCallback onFavorite;
 
@@ -29,20 +31,35 @@ class DoctorCarouselCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: NetworkPhoto(
-                      url: doctor.photoUrl,
-                      borderRadius: BorderRadius.circular(28),
-                    ),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(
+                    color: selected ? AppColors.primary : Colors.transparent,
+                    width: 3,
                   ),
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: _HeartButton(isFavorite: isFavorite, onTap: onFavorite),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(3),
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: NetworkPhoto(
+                          url: doctor.photoUrl,
+                          borderRadius: BorderRadius.circular(28),
+                        ),
+                      ),
+                      Positioned(
+                        top: 10,
+                        right: 10,
+                        child: _HeartButton(
+                          isFavorite: isFavorite,
+                          onTap: onFavorite,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
             const SizedBox(height: 10),

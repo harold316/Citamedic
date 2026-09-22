@@ -10,15 +10,17 @@ import '../providers/doctors_provider.dart';
 import '../providers/session_provider.dart';
 import '../providers/shell_tab_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_logo.dart';
+import '../widgets/delete_account_button.dart';
 import '../widgets/doctor_avatar.dart';
 import '../widgets/notifications_bell_button.dart';
 import '../widgets/specialty_card.dart';
+import '../widgets/support_tech_button.dart';
 import '../widgets/theme_toggle_button.dart';
 import 'change_location_screen.dart';
 import 'specialists_screen.dart';
 import 'specialties_screen.dart';
 import 'clinics_screen.dart';
-import 'doctor_profile_screen.dart';
 import 'medical_services_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -34,43 +36,46 @@ class HomeScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.add, color: Colors.white, size: 28),
-              ),
-              const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'CitaMedic',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18,
-                      color: colors.text,
+              const AppLogo(size: 48),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'CitaMedic',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                        color: colors.text,
+                      ),
                     ),
-                  ),
-                  Text(
-                    'Servicio médico fácil',
-                    style: TextStyle(color: colors.muted, fontSize: 12),
-                  ),
-                ],
+                    Text(
+                      'Servicio médico fácil',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: colors.muted, fontSize: 12),
+                    ),
+                  ],
+                ),
               ),
-              const Spacer(),
               const NotificationsBellButton(),
               const ThemeToggleButton(),
               IconButton(
                 tooltip: 'Cerrar sesión',
+                visualDensity: VisualDensity.compact,
+                style: IconButton.styleFrom(
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  minimumSize: const Size(40, 40),
+                  padding: const EdgeInsets.all(6),
+                ),
                 onPressed: () async {
                   context.read<SessionProvider>().clear();
                   await context.read<AuthProvider>().signOut();
                 },
-                icon: Icon(Icons.logout, color: AppColors.primary),
+                icon: const Icon(Icons.logout, color: AppColors.primary),
               ),
             ],
           ),
@@ -111,6 +116,8 @@ class HomeScreen extends StatelessWidget {
                 : 'Encuentra un especialista y agenda tu cita.',
             style: TextStyle(color: colors.muted),
           ),
+          const SizedBox(height: 16),
+          const SupportTechButton(),
           const SizedBox(height: 12),
           const _CurrentLocationRow(),
           const SizedBox(height: 22),
@@ -215,7 +222,6 @@ class HomeScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 22),
-          const _RegisteredDoctorsSection(),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -262,10 +268,16 @@ class HomeScreen extends StatelessWidget {
           }),
           const SizedBox(height: 8),
           OutlinedButton.icon(
-            onPressed: () => context.read<ShellTabProvider>().goTo(3),
+            onPressed: () {
+              context.read<ShellTabProvider>().goTo(3);
+            },
             icon: const Icon(Icons.event_available_outlined),
             label: const Text('Mis citas'),
           ),
+          if (!context.watch<AuthProvider>().isGuest) ...[
+            const SizedBox(height: 16),
+            const DeleteAccountButton(),
+          ],
         ],
       ),
     );
@@ -448,65 +460,6 @@ class _LocationChip extends StatelessWidget {
         backgroundColor: AppColors.of(context).primarySoft,
         side: BorderSide.none,
       ),
-    );
-  }
-}
-
-class _RegisteredDoctorsSection extends StatelessWidget {
-  const _RegisteredDoctorsSection();
-
-  @override
-  Widget build(BuildContext context) {
-    final doctors = context.watch<DoctorsProvider>().registeredDoctors;
-    if (doctors.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Médicos registrados',
-          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'Perfiles publicados por profesionales en CitaMedic.',
-          style: TextStyle(color: AppColors.of(context).muted, fontSize: 13),
-        ),
-        const SizedBox(height: 12),
-        ...doctors.map((doctor) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: ListTile(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => DoctorProfileScreen(doctorId: doctor.id),
-                  ),
-                );
-              },
-              tileColor: AppColors.of(context).surface,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              leading: DoctorAvatar(doctor: doctor),
-              title: Text(
-                doctor.name,
-                style: const TextStyle(fontWeight: FontWeight.w800),
-              ),
-              subtitle: Text(
-                '${doctor.specialty} · ${doctor.hospital}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              trailing: const Icon(Icons.chevron_right),
-            ),
-          );
-        }),
-        const SizedBox(height: 12),
-      ],
     );
   }
 }

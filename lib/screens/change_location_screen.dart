@@ -45,7 +45,7 @@ class _ChangeLocationScreenState extends State<ChangeLocationScreen> {
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
         children: [
           Text(
-            'Elige país, departamento, provincia y ciudad para ver profesionales cerca de ti.',
+            'Elige país, región y ciudad para ver profesionales cerca de ti.',
             style: TextStyle(color: AppColors.of(context).muted),
           ),
           const SizedBox(height: 18),

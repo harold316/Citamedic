@@ -10,7 +10,7 @@ bool blockGuestBooking(BuildContext context) {
   ScaffoldMessenger.of(context).showSnackBar(
     const SnackBar(
       content: Text(
-        'En modo invitado solo puedes ver. Regístrate con Google para agendar citas.',
+        'En modo invitado solo puedes ver. Crea una cuenta o inicia sesión para agendar citas.',
       ),
     ),
   );

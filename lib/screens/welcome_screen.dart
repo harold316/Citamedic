@@ -6,9 +6,11 @@ import '../models/user_location.dart';
 import '../providers/auth_provider.dart';
 import '../providers/session_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_logo.dart';
 import '../widgets/location_selectors.dart';
 import '../widgets/notifications_bell_button.dart';
 import '../widgets/primary_pill_button.dart';
+import '../widgets/support_tech_button.dart';
 import '../widgets/theme_toggle_button.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -39,21 +41,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   NotificationsBellButton(),
+                  SupportTechIconButton(),
                   ThemeToggleButton(),
                 ],
               ),
             ),
-            Center(
-              child: Container(
-                width: 72,
-                height: 72,
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.add, color: Colors.white, size: 40),
-              ),
-            ),
+            const Center(child: AppLogo(size: 112)),
             const SizedBox(height: 16),
             Text(
               'CitaMedic',

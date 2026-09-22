@@ -30,7 +30,7 @@ service cloud.firestore {
         && request.auth.uid == doctorId
         && doctorNotSelfPublishing()
       );
-      allow delete: if isAdmin();
+      allow delete: if isAdmin() || (isSignedIn() && request.auth.uid == doctorId);
     }
 
     match /clinics/{clinicId} {
@@ -43,8 +43,10 @@ service cloud.firestore {
         && request.auth.uid == clinicId
         && doctorNotSelfPublishing()
       );
-      allow delete: if isAdmin();
+      allow delete: if isAdmin() || (isSignedIn() && request.auth.uid == clinicId);
     }
+
+    match /appointments/{appointmentId} {
       allow create: if isSignedIn()
         && request.resource.data.patientId == request.auth.uid
         && request.auth.token.firebase.sign_in_provider != 'anonymous';
@@ -52,6 +54,18 @@ service cloud.firestore {
         isAdmin()
         || resource.data.patientId == request.auth.uid
         || resource.data.doctorId == request.auth.uid
+      );
+      allow update: if isAdmin() || (
+        isSignedIn()
+        && resource.data.doctorId == request.auth.uid
+        && request.resource.data.doctorId == resource.data.doctorId
+        && request.resource.data.patientId == resource.data.patientId
+      );
+      allow delete: if isAdmin() || (
+        isSignedIn() && (
+          resource.data.patientId == request.auth.uid
+          || resource.data.doctorId == request.auth.uid
+        )
       );
     }
   }

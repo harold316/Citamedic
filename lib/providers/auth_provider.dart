@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
@@ -8,7 +9,8 @@ import 'package:flutter/foundation.dart';
 import '../data/admin_config.dart';
 import '../data/firestore_paths.dart';
 import '../models/user_role.dart';
-import '../services/in_app_messaging.dart';
+import '../services/firebase_economy.dart';
+import '../services/google_auth.dart';
 import '../services/push_notifications.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -44,6 +46,10 @@ class AuthProvider extends ChangeNotifier {
     final mail = user?.email;
     if (mail != null && mail.contains('@')) {
       return mail.split('@').first;
+    }
+    final phone = user?.phoneNumber;
+    if (phone != null && phone.isNotEmpty) {
+      return phone;
     }
     return 'Usuario';
   }
@@ -191,41 +197,24 @@ class AuthProvider extends ChangeNotifier {
     role = UserRole.patient;
     roleReady = true;
     notifyListeners();
-    unawaited(InAppMessagingService.instance.setUserRole('guest'));
-    unawaited(
-      InAppMessagingService.instance.trigger('guest_session', once: true),
-    );
   }
 
-  Future<void> signInWithGoogle() async {
+  Future<void> signInWithGoogle({
+    UserRole intendedRole = UserRole.patient,
+    String? displayName,
+    Future<void> Function(String uid)? afterCreate,
+    bool forceWeb = false,
+  }) async {
     _ensureReady();
     _captureAuth = true;
     _localGuest = false;
     roleReady = false;
     notifyListeners();
     try {
-      final provider = GoogleAuthProvider()
-        ..addScope('email')
-        ..setCustomParameters({'prompt': 'select_account'});
-      final current = FirebaseAuth.instance.currentUser;
-      late final UserCredential credential;
-      if (current != null && current.isAnonymous) {
-        try {
-          credential = await current.linkWithProvider(provider);
-        } on FirebaseAuthException catch (error) {
-          if (error.code == 'credential-already-in-use' ||
-              error.code == 'account-exists-with-different-credential' ||
-              error.code == 'provider-already-linked') {
-            credential = await FirebaseAuth.instance.signInWithProvider(
-              provider,
-            );
-          } else {
-            rethrow;
-          }
-        }
-      } else {
-        credential = await FirebaseAuth.instance.signInWithProvider(provider);
-      }
+      final credential = await GoogleAuthService.instance.signIn(
+        anonymous: FirebaseAuth.instance.currentUser,
+        forceWeb: forceWeb,
+      );
       final signedIn = credential.user ?? FirebaseAuth.instance.currentUser;
       if (signedIn == null) {
         _captureAuth = false;
@@ -249,6 +238,50 @@ class AuthProvider extends ChangeNotifier {
         await _loadProfile(FirebaseAuth.instance.currentUser ?? signedIn);
         return;
       }
+
+      final existingRole = await _existingRoleFor(signedIn);
+      if (intendedRole == UserRole.doctor) {
+        if (existingRole == UserRole.patient ||
+            existingRole == UserRole.clinic) {
+          await GoogleAuthService.instance.signOut();
+          await FirebaseAuth.instance.signOut();
+          throw StateError(
+            existingRole == UserRole.clinic
+                ? 'Esa cuenta de Google ya está registrada como clínica.'
+                : 'Esa cuenta de Google ya está registrada como paciente. Inicia sesión o usa otro correo.',
+          );
+        }
+        role = UserRole.doctor;
+        final name = (displayName?.trim().isNotEmpty == true
+                ? displayName!.trim()
+                : UserRole.visibleName(
+                    signedIn.displayName?.trim().isNotEmpty == true
+                        ? signedIn.displayName
+                        : signedIn.email,
+                  ));
+        try {
+          await signedIn.updateDisplayName(UserRole.doctor.encodeName(name));
+          await signedIn.reload();
+        } catch (error) {
+          debugPrint('No se pudo actualizar el nombre de Google: $error');
+        }
+        final current = FirebaseAuth.instance.currentUser ?? signedIn;
+        try {
+          await _saveProfile(current, role: UserRole.doctor, name: name);
+        } catch (error) {
+          debugPrint('No se pudo guardar el perfil en Firestore: $error');
+        }
+        if (afterCreate != null && existingRole != UserRole.doctor) {
+          try {
+            await afterCreate(current.uid);
+          } catch (error) {
+            debugPrint('No se pudo publicar la tarjeta médica: $error');
+          }
+        }
+        await _loadProfile(current);
+        return;
+      }
+
       role = UserRole.patient;
       final name = UserRole.visibleName(
         signedIn.displayName?.trim().isNotEmpty == true
@@ -265,6 +298,11 @@ class AuthProvider extends ChangeNotifier {
         debugPrint('No se pudo actualizar el nombre de Google: $error');
       }
       await _loadProfile(FirebaseAuth.instance.currentUser ?? signedIn);
+    } on GoogleSignInCanceled {
+      _captureAuth = false;
+      roleReady = true;
+      notifyListeners();
+      rethrow;
     } catch (error) {
       _captureAuth = false;
       roleReady = true;
@@ -284,6 +322,7 @@ class AuthProvider extends ChangeNotifier {
     _captureAuth = false;
     _localGuest = false;
     await PushNotifications.instance.unbind();
+    await GoogleAuthService.instance.signOut();
     if (!isReady) {
       user = null;
       role = UserRole.patient;
@@ -298,7 +337,91 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> deleteOwnAccount() async {
+    final signedIn = FirebaseAuth.instance.currentUser;
+    if (signedIn == null || signedIn.isAnonymous) {
+      throw StateError('Debes iniciar sesión para eliminar tu cuenta.');
+    }
+    if (isAdminEmail(signedIn.email)) {
+      throw StateError('La cuenta de administrador no se puede eliminar aquí.');
+    }
+    final uid = signedIn.uid;
+    var removedAuth = false;
+    try {
+      await FirebaseFunctions.instanceFor(region: 'us-central1')
+          .httpsCallable('deleteOwnAccount')
+          .call();
+      removedAuth = true;
+    } catch (error) {
+      debugPrint('No se pudo borrar la cuenta por Functions: $error');
+    }
+
+    if (!removedAuth) {
+      await _deleteOwnFirestoreData(uid);
+      try {
+        await signedIn.delete();
+        removedAuth = true;
+      } on FirebaseAuthException catch (error) {
+        if (error.code == 'requires-recent-login') {
+          throw StateError(
+            'Por seguridad, cierra sesión, vuelve a entrar y elimina la cuenta de nuevo.',
+          );
+        }
+        throw StateError(
+          error.message ?? 'No se pudo eliminar la cuenta de acceso.',
+        );
+      }
+    }
+
+    _captureAuth = false;
+    _localGuest = false;
+    await PushNotifications.instance.unbind();
+    await GoogleAuthService.instance.signOut();
+    try {
+      if (FirebaseAuth.instance.currentUser != null) {
+        await FirebaseAuth.instance.signOut();
+      }
+    } catch (error) {
+      debugPrint('Sesión ya cerrada al borrar la cuenta: $error');
+    }
+    user = null;
+    role = UserRole.patient;
+    roleReady = true;
+    notifyListeners();
+  }
+
+  Future<void> _deleteOwnFirestoreData(String uid) async {
+    final db = FirebaseFirestore.instance;
+    for (final path in [
+      FirestorePaths.doctors,
+      FirestorePaths.clinics,
+      FirestorePaths.users,
+    ]) {
+      try {
+        await db.collection(path).doc(uid).delete();
+      } catch (_) {}
+    }
+    try {
+      final asPatient = await db
+          .collection(FirestorePaths.appointments)
+          .where('patientId', isEqualTo: uid)
+          .get();
+      final asDoctor = await db
+          .collection(FirestorePaths.appointments)
+          .where('doctorId', isEqualTo: uid)
+          .get();
+      for (final doc in [...asPatient.docs, ...asDoctor.docs]) {
+        await doc.reference.delete();
+      }
+    } catch (error) {
+      debugPrint('No se pudieron borrar las citas de $uid: $error');
+    }
+  }
+
   String messageFor(Object error) {
+    if (error is GoogleSignInCanceled) {
+      return 'Cancelaste el acceso con Google.';
+    }
     if (error is FirebaseAuthException) {
       switch (error.code) {
         case 'invalid-email':
@@ -318,6 +441,8 @@ class AuthProvider extends ChangeNotifier {
           return 'Sin conexión. Revisa tu internet.';
         case 'too-many-requests':
           return 'Demasiados intentos. Espera un momento.';
+        case 'requires-recent-login':
+          return 'Por seguridad, cierra sesión, vuelve a entrar y elimina la cuenta de nuevo.';
         case 'operation-not-allowed':
           return 'Este método de acceso no está activado en Firebase Authentication.';
         case 'admin-restricted-operation':
@@ -352,6 +477,28 @@ class AuthProvider extends ChangeNotifier {
     return 'No se pudo completar la autenticación.';
   }
 
+  Future<UserRole?> _existingRoleFor(User signedIn) async {
+    final fromName = UserRole.fromDisplayName(signedIn.displayName);
+    if (fromName == UserRole.doctor || fromName == UserRole.clinic) {
+      return fromName;
+    }
+    try {
+      final doc = await FirebaseEconomy.getDocument(
+        FirebaseFirestore.instance
+            .collection(FirestorePaths.users)
+            .doc(signedIn.uid),
+        preferCache: false,
+      );
+      if (!doc.exists) {
+        return null;
+      }
+      return UserRole.fromId(doc.data()?['role']);
+    } catch (error) {
+      debugPrint('No se pudo leer el rol existente: $error');
+      return fromName == UserRole.patient ? null : fromName;
+    }
+  }
+
   Future<void> _loadProfile(User signedIn) async {
     if (isAdminEmail(signedIn.email)) {
       role = UserRole.admin;
@@ -359,19 +506,26 @@ class AuthProvider extends ChangeNotifier {
       role = UserRole.fromDisplayName(signedIn.displayName);
     }
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection(FirestorePaths.users)
-          .doc(signedIn.uid)
-          .get();
+      final doc = await FirebaseEconomy.getDocument(
+        FirebaseFirestore.instance
+            .collection(FirestorePaths.users)
+            .doc(signedIn.uid),
+        preferCache: false,
+      );
       if (!isAdminEmail(signedIn.email) && doc.exists) {
         role = UserRole.fromId(doc.data()?['role']);
       }
       if (!signedIn.isAnonymous) {
-        await _saveProfile(
-          signedIn,
-          role: role,
-          name: UserRole.visibleName(signedIn.displayName),
-        );
+        final name = UserRole.visibleName(signedIn.displayName);
+        final data = doc.data();
+        final unchanged = doc.exists &&
+            data?['role'] == role.id &&
+            data?['name'] == name &&
+            data?['email'] == (signedIn.email ?? '') &&
+            data?['phone'] == (signedIn.phoneNumber ?? '');
+        if (!unchanged) {
+          await _saveProfile(signedIn, role: role, name: name);
+        }
       }
     } catch (error) {
       debugPrint('No se pudo leer el perfil: $error');
@@ -381,10 +535,6 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
     unawaited(
       PushNotifications.instance.bind(uid: signedIn.uid, role: role),
-    );
-    unawaited(InAppMessagingService.instance.setUserRole(role.id));
-    unawaited(
-      InAppMessagingService.instance.trigger('login_success', once: true),
     );
   }
 
@@ -400,6 +550,7 @@ class AuthProvider extends ChangeNotifier {
           'role': role.id,
           'name': name,
           'email': signedIn.email ?? '',
+          'phone': signedIn.phoneNumber ?? '',
           'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
   }

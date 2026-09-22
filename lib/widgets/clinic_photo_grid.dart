@@ -4,7 +4,7 @@ import '../models/clinic_photo_draft.dart';
 import '../theme/app_theme.dart';
 import 'network_photo.dart';
 
-const maxClinicPhotos = 8;
+const maxClinicPhotos = 10;
 
 class ClinicPhotoGrid extends StatelessWidget {
   const ClinicPhotoGrid({

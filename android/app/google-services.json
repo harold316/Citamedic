@@ -13,18 +13,72 @@
           "package_name": "com.citamedic.citamedic"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1057339924007-ad5iaplp8bs6qbsr593hpt5kuj0gfh67.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.citamedic.citamedic",
+            "certificate_hash": "3ca2587635658c558f1e41699437c3eff40efb14"
+          }
+        },
+        {
+          "client_id": "1057339924007-grkbpc6olfs8s417j4hbomfrvc3cfnn4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.citamedic.citamedic",
+            "certificate_hash": "24e42096d49d50227ff34a5821d88dc3f3685c57"
+          }
+        },
+        {
+          "client_id": "1057339924007-ifc1dm0p06l39gu4vdqc20v6kdu4hhnh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.citamedic.citamedic",
+            "certificate_hash": "fbaeebccd7e6bd2cdec69413a458a446ed8ae06b"
+          }
+        },
+        {
+          "client_id": "1057339924007-nj0qs8p72krqkj1g6huq553mvggi4o4h.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.citamedic.citamedic",
+            "certificate_hash": "cd0b935d5708c90fb3b2fafe06da919d5a6a6934"
+          }
+        },
+        {
+          "client_id": "1057339924007-v8h0657imp0f19j601k9emknaujjrfog.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.citamedic.citamedic",
+            "certificate_hash": "f7ef918a14cf870cec2940b03a7a6fbd9f27694c"
+          }
+        },
+        {
+          "client_id": "1057339924007-h8r8fmtmco377jgadpk5bmoom8cp59ui.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDWDAh4EEPzi2oEC_FDifOOTi1k2npckGE"
         }
       ],
       "services": {
-        "analytics_service": {
-          "status": 1
-        },
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1057339924007-h8r8fmtmco377jgadpk5bmoom8cp59ui.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1057339924007-vludu1olen6f7uhhg4fuht79c4danf67.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.citamedic.citamedic"
+              }
+            }
+          ]
         }
       }
     },
@@ -35,7 +89,12 @@
           "package_name": "com.example.calculadora_medica"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1057339924007-h8r8fmtmco377jgadpk5bmoom8cp59ui.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDWDAh4EEPzi2oEC_FDifOOTi1k2npckGE"
@@ -43,7 +102,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1057339924007-h8r8fmtmco377jgadpk5bmoom8cp59ui.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1057339924007-vludu1olen6f7uhhg4fuht79c4danf67.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.citamedic.citamedic"
+              }
+            }
+          ]
         }
       }
     }

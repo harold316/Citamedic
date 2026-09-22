@@ -16,10 +16,13 @@ import '../providers/session_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/appointment_card.dart';
 import '../widgets/doctor_medical_card.dart';
+import 'appointment_detail_screen.dart';
 import '../widgets/location_selectors.dart';
 import '../widgets/notifications_bell_button.dart';
 import '../widgets/primary_pill_button.dart';
 import '../widgets/specialty_category_dropdown.dart';
+import '../widgets/delete_account_button.dart';
+import '../widgets/support_tech_button.dart';
 import '../widgets/theme_toggle_button.dart';
 import 'office_location_screen.dart';
 
@@ -199,6 +202,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
           title: const Text('Mi perfil'),
           actions: [
             const NotificationsBellButton(),
+            const SupportTechIconButton(),
             const ThemeToggleButton(),
             IconButton(
               tooltip: 'Cerrar sesión',
@@ -251,6 +255,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                 const SizedBox(height: 16),
                 _UploadTile(
                   label: 'Foto de perfil',
+                  hint: 'Foto de frente con fondo claro y ropa de trabajo.',
                   icon: Icons.photo_camera_outlined,
                   filled: _hasProfilePhoto,
                   onTap: _pickImage,
@@ -261,6 +266,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                   textCapitalization: TextCapitalization.words,
                   decoration: const InputDecoration(
                     labelText: 'Nombre profesional',
+                    hintText: 'Ej. Dr. Juan Pérez',
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -273,13 +279,15 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                   controller: _credentialsController,
                   decoration: const InputDecoration(
                     labelText: 'Credenciales o matrícula',
+                    hintText: 'Ej. Especialidad en Santa Cruz. Mat. Prof. ----',
                   ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _hospitalController,
                   decoration: const InputDecoration(
-                    labelText: 'Clínica u hospital',
+                    labelText: 'Lugar de trabajo',
+                    hintText: 'Clínica, hospital o establecimiento de salud',
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -310,10 +318,12 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: _aboutController,
-                  maxLines: 4,
+                  maxLines: 5,
                   decoration: const InputDecoration(
                     labelText: 'Acerca de ti',
                     alignLabelWithHint: true,
+                    hintText:
+                        'Ej. Médico especialista en [Tu Especialidad] con más de [X] años de experiencia clínica. Me enfoco en brindar diagnósticos precisos y tratamientos personalizados con un trato humano, empático y de escucha activa.',
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -463,6 +473,12 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
                   label: _saving ? 'Enviando...' : _submitLabel,
                   onPressed: _saving ? null : _save,
                 ),
+                const SizedBox(height: 16),
+                DeleteAccountButton(
+                  onBeforeDelete: () async {
+                    context.read<DoctorsProvider>().forgetRegistration();
+                  },
+                ),
               ],
             ),
           ],
@@ -573,14 +589,14 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     final hospital = _hospitalController.text.trim();
     if (name.isEmpty || hospital.isEmpty) {
       setState(
-        () => _error = 'Escribe tu nombre profesional y la clínica u hospital.',
+        () => _error = 'Escribe tu nombre profesional y el lugar de trabajo.',
       );
       return;
     }
     if (_phoneController.text.replaceAll(RegExp(r'\D'), '').length < 8) {
       setState(
         () => _error =
-            'Escribe tu WhatsApp con código de país, por ejemplo 18095551234.',
+            'Escribe el número con código de país, por ejemplo 18095551234.',
       );
       return;
     }
@@ -697,7 +713,7 @@ class _ReviewStatusBanner extends StatelessWidget {
       ),
       DoctorReviewStatus.pending => (
         const Color(0xFFE8A838),
-        'Tu perfil está en revisión. Te avisaremos cuando un administrador lo verifique.',
+        'Tu perfil está en revisión. Te avisaremos cuando un administrador lo verifique. Contacta a soporte técnico para la verificación.',
       ),
       DoctorReviewStatus.approved => (
         AppColors.primary,
@@ -784,6 +800,19 @@ class _DoctorAppointmentsTab extends StatelessWidget {
           subtitle: appointment.patientEmail.isEmpty
               ? appointment.serviceName
               : '${appointment.serviceName} · ${appointment.patientEmail}',
+          onTap: () => openAppointmentDetail(context, appointment),
+          onDelete: () => deleteAppointmentWithConfirm(
+            context,
+            appointment: appointment,
+          ),
+          onAccept: () => acceptAppointmentWithConfirm(
+            context,
+            appointment: appointment,
+          ),
+          onReschedule: () => rescheduleAppointment(
+            context,
+            appointment: appointment,
+          ),
         );
       },
     );
@@ -796,9 +825,11 @@ class _UploadTile extends StatelessWidget {
     required this.icon,
     required this.filled,
     required this.onTap,
+    this.hint,
   });
 
   final String label;
+  final String? hint;
   final IconData icon;
   final bool filled;
   final VoidCallback onTap;
@@ -830,6 +861,17 @@ class _UploadTile extends StatelessWidget {
                   color: AppColors.of(context).text,
                 ),
               ),
+              if (hint != null && hint!.trim().isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  hint!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.of(context).muted,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
             ],
           ),
         ),

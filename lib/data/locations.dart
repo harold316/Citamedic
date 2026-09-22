@@ -1,28 +1,4 @@
 const locationCatalog = {
-  'República Dominicana': {
-    'Distrito Nacional': {
-      'Santo Domingo': ['Santo Domingo'],
-    },
-    'Santo Domingo': {
-      'Santo Domingo Este': ['Santo Domingo Este'],
-      'Santo Domingo Norte': ['Santo Domingo Norte'],
-      'Los Alcarrizos': ['Los Alcarrizos'],
-    },
-    'Santiago': {
-      'Santiago': ['Santiago', 'Tamboril'],
-    },
-    'La Vega': {
-      'La Vega': ['La Vega', 'Constanza'],
-    },
-  },
-  'Colombia': {
-    'Cundinamarca': {
-      'Sabana Centro': ['Bogotá'],
-    },
-    'Antioquia': {
-      'Valle de Aburrá': ['Medellín', 'Envigado'],
-    },
-  },
   'Bolivia': {
     'La Paz': {
       'Murillo': ['La Paz', 'El Alto'],
@@ -62,12 +38,159 @@ const locationCatalog = {
       'Nicolás Suárez': ['Cobija'],
     },
   },
+  'Argentina': {
+    'Buenos Aires': {
+      'La Plata': ['La Plata'],
+      'General Pueyrredón': ['Mar del Plata'],
+      'Bahía Blanca': ['Bahía Blanca'],
+      'La Matanza': ['San Justo', 'Ramos Mejía'],
+      'Quilmes': ['Quilmes'],
+      'Lanús': ['Lanús'],
+      'Lomas de Zamora': ['Lomas de Zamora'],
+      'Vicente López': ['Olivos', 'Florida'],
+      'San Isidro': ['San Isidro'],
+      'Tigre': ['Tigre'],
+      'Pilar': ['Pilar'],
+      'Tandil': ['Tandil'],
+      'Almirante Brown': ['Adrogué'],
+      'Morón': ['Morón'],
+      'San Martín': ['San Martín'],
+      'Avellaneda': ['Avellaneda'],
+      'Tres de Febrero': ['Caseros'],
+      'Moreno': ['Moreno'],
+      'Merlo': ['Merlo'],
+      'Florencio Varela': ['Florencio Varela'],
+      'Berazategui': ['Berazategui'],
+      'Escobar': ['Belén de Escobar'],
+      'San Miguel': ['San Miguel'],
+      'Malvinas Argentinas': ['Los Polvorines'],
+      'José C. Paz': ['José C. Paz'],
+      'Pergamino': ['Pergamino'],
+      'Necochea': ['Necochea'],
+      'Olavarría': ['Olavarría'],
+      'Junín': ['Junín'],
+      'San Nicolás': ['San Nicolás de los Arroyos'],
+    },
+    'Ciudad Autónoma de Buenos Aires': {
+      'CABA': ['Buenos Aires'],
+    },
+    'Córdoba': {
+      'Capital': ['Córdoba'],
+      'Punilla': ['Villa Carlos Paz', 'La Falda'],
+      'Colón': ['Jesús María'],
+      'Río Cuarto': ['Río Cuarto'],
+      'San Justo': ['San Francisco'],
+      'General San Martín': ['Villa María'],
+    },
+    'Santa Fe': {
+      'La Capital': ['Santa Fe'],
+      'Rosario': ['Rosario'],
+      'Castellanos': ['Rafaela'],
+      'General López': ['Venado Tuerto'],
+    },
+    'Mendoza': {
+      'Capital': ['Mendoza'],
+      'Guaymallén': ['Guaymallén'],
+      'Godoy Cruz': ['Godoy Cruz'],
+      'Las Heras': ['Las Heras'],
+      'San Rafael': ['San Rafael'],
+      'Luján de Cuyo': ['Luján de Cuyo'],
+    },
+    'Tucumán': {
+      'Capital': ['San Miguel de Tucumán'],
+      'Yerba Buena': ['Yerba Buena'],
+      'Tafí Viejo': ['Tafí Viejo'],
+    },
+    'Salta': {
+      'Capital': ['Salta'],
+      'Orán': ['San Ramón de la Nueva Orán'],
+    },
+    'Entre Ríos': {
+      'Paraná': ['Paraná'],
+      'Concordia': ['Concordia'],
+      'Gualeguaychú': ['Gualeguaychú'],
+    },
+    'Misiones': {
+      'Capital': ['Posadas'],
+      'Iguazú': ['Puerto Iguazú'],
+      'Oberá': ['Oberá'],
+    },
+    'Corrientes': {
+      'Capital': ['Corrientes'],
+      'Goya': ['Goya'],
+    },
+    'Chaco': {
+      'San Fernando': ['Resistencia'],
+      'Comandante Fernández': ['Presidencia Roque Sáenz Peña'],
+    },
+    'Santiago del Estero': {
+      'Capital': ['Santiago del Estero'],
+      'Banda': ['La Banda'],
+    },
+    'San Juan': {
+      'Capital': ['San Juan'],
+    },
+    'Jujuy': {
+      'Dr. Manuel Belgrano': ['San Salvador de Jujuy'],
+      'Palpalá': ['Palpalá'],
+    },
+    'Río Negro': {
+      'Adolfo Alsina': ['Viedma'],
+      'General Roca': ['General Roca', 'Cipolletti'],
+      'Bariloche': ['San Carlos de Bariloche'],
+    },
+    'Neuquén': {
+      'Confluencia': ['Neuquén', 'Plottier', 'Centenario'],
+      'Los Lagos': ['Villa La Angostura'],
+      'Lácar': ['San Martín de los Andes'],
+    },
+    'Formosa': {
+      'Formosa': ['Formosa'],
+    },
+    'Chubut': {
+      'Rawson': ['Rawson', 'Trelew'],
+      'Escalante': ['Comodoro Rivadavia'],
+      'Futaleufú': ['Esquel'],
+      'Biedma': ['Puerto Madryn'],
+    },
+    'San Luis': {
+      'Juan Martín de Pueyrredón': ['San Luis'],
+      'General Pedernera': ['Villa Mercedes'],
+    },
+    'Catamarca': {
+      'Capital': ['San Fernando del Valle de Catamarca'],
+    },
+    'La Rioja': {
+      'Capital': ['La Rioja'],
+    },
+    'La Pampa': {
+      'Capital': ['Santa Rosa'],
+      'Maracó': ['General Pico'],
+    },
+    'Santa Cruz': {
+      'Güer Aike': ['Río Gallegos'],
+      'Deseado': ['Caleta Olivia'],
+      'Lago Argentino': ['El Calafate'],
+    },
+    'Tierra del Fuego': {
+      'Ushuaia': ['Ushuaia'],
+      'Río Grande': ['Río Grande'],
+    },
+  },
 };
 
-const defaultCountry = 'República Dominicana';
-const defaultDepartment = 'Distrito Nacional';
-const defaultProvince = 'Santo Domingo';
-const defaultCity = 'Santo Domingo';
+const defaultCountry = 'Bolivia';
+const defaultDepartment = 'Beni';
+const defaultProvince = 'Cercado';
+const defaultCity = 'Trinidad';
+
+String regionLabel(String country) {
+  return country == 'Argentina' ? 'Provincia' : 'Departamento';
+}
+
+String subregionLabel(String country) {
+  return country == 'Argentina' ? 'Departamento' : 'Municipio';
+}
 
 List<String> catalogDepartments(String country) {
   return locationCatalog[country]?.keys.toList() ?? [];
@@ -95,157 +218,33 @@ List<String> catalogAllProvinces(String country) {
   }.toList();
 }
 
-String departmentForCity(String city) {
-  switch (city) {
-    case 'Santiago':
-    case 'Tamboril':
-      return 'Santiago';
-    case 'La Vega':
-    case 'Constanza':
-      return 'La Vega';
-    case 'Santo Domingo Este':
-    case 'Santo Domingo Norte':
-    case 'Los Alcarrizos':
-      return 'Santo Domingo';
-    case 'La Paz':
-    case 'El Alto':
-    case 'Viacha':
-      return 'La Paz';
-    case 'Santa Cruz de la Sierra':
-    case 'Montero':
-      return 'Santa Cruz';
-    case 'Cochabamba':
-      return 'Cochabamba';
-    case 'Quillacollo':
-      return 'Cochabamba';
-    case 'Sucre':
-      return 'Chuquisaca';
-    case 'Oruro':
-      return 'Oruro';
-    case 'Potosí':
-      return 'Potosí';
-    case 'Tarija':
-      return 'Tarija';
-    case 'Trinidad':
-    case 'Riberalta':
-    case 'Guayaramerín':
-    case 'Rurrenabaque':
-    case 'San Borja':
-    case 'Santa Ana del Yacuma':
-    case 'San Ignacio de Moxos':
-    case 'Loreto':
-    case 'San Joaquín':
-    case 'Magdalena':
-      return 'Beni';
-    case 'Cobija':
-      return 'Pando';
-    case 'Bogotá':
-      return 'Cundinamarca';
-    case 'Medellín':
-    case 'Envigado':
-      return 'Antioquia';
-    default:
-      return 'Distrito Nacional';
+({String country, String department, String province})? _placeForCity(
+  String city,
+) {
+  for (final country in locationCatalog.entries) {
+    for (final department in country.value.entries) {
+      for (final province in department.value.entries) {
+        if (province.value.contains(city)) {
+          return (
+            country: country.key,
+            department: department.key,
+            province: province.key,
+          );
+        }
+      }
+    }
   }
+  return null;
+}
+
+String departmentForCity(String city) {
+  return _placeForCity(city)?.department ?? defaultDepartment;
 }
 
 String provinceForCity(String city) {
-  switch (city) {
-    case 'Santo Domingo':
-      return 'Santo Domingo';
-    case 'Santo Domingo Este':
-      return 'Santo Domingo Este';
-    case 'Santo Domingo Norte':
-      return 'Santo Domingo Norte';
-    case 'Los Alcarrizos':
-      return 'Los Alcarrizos';
-    case 'Santiago':
-    case 'Tamboril':
-      return 'Santiago';
-    case 'La Vega':
-    case 'Constanza':
-      return 'La Vega';
-    case 'La Paz':
-    case 'El Alto':
-      return 'Murillo';
-    case 'Viacha':
-      return 'Ingavi';
-    case 'Santa Cruz de la Sierra':
-      return 'Andrés Ibáñez';
-    case 'Montero':
-      return 'Obispo Santistevan';
-    case 'Cochabamba':
-      return 'Cercado';
-    case 'Quillacollo':
-      return 'Quillacollo';
-    case 'Sucre':
-      return 'Oropeza';
-    case 'Oruro':
-      return 'Cercado';
-    case 'Potosí':
-      return 'Tomás Frías';
-    case 'Tarija':
-      return 'Cercado';
-    case 'Trinidad':
-      return 'Cercado';
-    case 'Riberalta':
-    case 'Guayaramerín':
-      return 'Vaca Díez';
-    case 'Rurrenabaque':
-    case 'San Borja':
-      return 'José Ballivián';
-    case 'Santa Ana del Yacuma':
-      return 'Yacuma';
-    case 'San Ignacio de Moxos':
-      return 'Moxos';
-    case 'Loreto':
-      return 'Marbán';
-    case 'San Joaquín':
-      return 'Mamoré';
-    case 'Magdalena':
-      return 'Iténez';
-    case 'Cobija':
-      return 'Nicolás Suárez';
-    case 'Bogotá':
-      return 'Sabana Centro';
-    case 'Medellín':
-    case 'Envigado':
-      return 'Valle de Aburrá';
-    default:
-      return 'Santo Domingo';
-  }
+  return _placeForCity(city)?.province ?? defaultProvince;
 }
 
 String countryForCity(String city) {
-  const boliviaCities = {
-    'La Paz',
-    'El Alto',
-    'Viacha',
-    'Santa Cruz de la Sierra',
-    'Montero',
-    'Cochabamba',
-    'Quillacollo',
-    'Sucre',
-    'Oruro',
-    'Potosí',
-    'Tarija',
-    'Trinidad',
-    'Riberalta',
-    'Guayaramerín',
-    'Rurrenabaque',
-    'San Borja',
-    'Santa Ana del Yacuma',
-    'San Ignacio de Moxos',
-    'Loreto',
-    'San Joaquín',
-    'Magdalena',
-    'Cobija',
-  };
-  if (boliviaCities.contains(city)) {
-    return 'Bolivia';
-  }
-  if (city == 'Bogotá' || city == 'Medellín' || city == 'Envigado') {
-    return 'Colombia';
-  }
-  return 'República Dominicana';
+  return _placeForCity(city)?.country ?? defaultCountry;
 }

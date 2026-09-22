@@ -34,7 +34,10 @@ class PushNotifications {
   StreamSubscription<RemoteMessage>? _openedSub;
   String? _uid;
   String? _boundTopic;
+  String? _savedToken;
   String? pendingType;
+  Future<void>? _permissionRequest;
+  Future<void>? _bindRequest;
   ShellTabProvider? _tabs;
   void Function(String title, String body, String? type)? onInboxMessage;
   final tokenListenable = ValueNotifier<String?>(null);
@@ -114,7 +117,6 @@ class PushNotifications {
       pendingType = launch.data['type'];
     }
     _tokenSub ??= FirebaseMessaging.instance.onTokenRefresh.listen(_saveToken);
-    unawaited(_requestPermission().then((_) => refreshToken()));
   }
 
   Future<void> refreshToken() async {
@@ -144,6 +146,23 @@ class PushNotifications {
     if (!_supported || uid.isEmpty || Firebase.apps.isEmpty) {
       return;
     }
+    final previous = _bindRequest;
+    final current = () async {
+      if (previous != null) {
+        try {
+          await previous;
+        } catch (_) {}
+      }
+      await _bindInternal(uid: uid, role: role);
+    }();
+    _bindRequest = current;
+    await current;
+  }
+
+  Future<void> _bindInternal({
+    required String uid,
+    required UserRole role,
+  }) async {
     await _requestPermission();
     _uid = uid;
     final messaging = FirebaseMessaging.instance;
@@ -200,17 +219,7 @@ class PushNotifications {
     if (uid == null || uid.isEmpty) {
       return;
     }
-    try {
-      await FirebaseFirestore.instance
-          .collection(FirestorePaths.users)
-          .doc(uid)
-          .set({
-            'fcmToken': FieldValue.delete(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
-    } catch (error) {
-      debugPrint('No se pudo borrar el token FCM: $error');
-    }
+    _savedToken = null;
   }
 
   void consumeLaunch(ShellTabProvider tabs) {
@@ -274,16 +283,60 @@ class PushNotifications {
   }
 
   Future<void> _requestPermission() async {
-    await FirebaseMessaging.instance.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.requestNotificationsPermission();
+    final pending = _permissionRequest;
+    if (pending != null) {
+      await pending;
+      return;
+    }
+    final request = _requestPermissionOnce();
+    _permissionRequest = request;
+    try {
+      await request;
+    } finally {
+      if (identical(_permissionRequest, request)) {
+        _permissionRequest = null;
+      }
+    }
+  }
+
+  Future<void> _requestPermissionOnce() async {
+    final messaging = FirebaseMessaging.instance;
+    try {
+      final current = await messaging.getNotificationSettings();
+      if (current.authorizationStatus == AuthorizationStatus.notDetermined) {
+        await messaging.requestPermission(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+      }
+    } on FirebaseException catch (error) {
+      if (!_isPermissionBusy(error)) {
+        debugPrint('No se pudo pedir permiso FCM: $error');
+      }
+    } catch (error) {
+      debugPrint('No se pudo pedir permiso FCM: $error');
+    }
+    try {
+      final android = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      final granted = await android?.areNotificationsEnabled();
+      if (granted != true) {
+        await android?.requestNotificationsPermission();
+      }
+    } catch (error) {
+      if (!_isPermissionBusy(error)) {
+        debugPrint('No se pudo pedir permiso local: $error');
+      }
+    }
+  }
+
+  bool _isPermissionBusy(Object error) {
+    final text = error.toString().toLowerCase();
+    return text.contains('already running') ||
+        text.contains('please wait for it to finish');
   }
 
   Future<void> _saveToken(String? token) async {
@@ -293,7 +346,7 @@ class PushNotifications {
     }
     debugPrint('FCM token: $token');
     final uid = _uid;
-    if (token == null || uid == null || uid.isEmpty) {
+    if (token == null || uid == null || uid.isEmpty || token == _savedToken) {
       return;
     }
     try {
@@ -304,6 +357,7 @@ class PushNotifications {
             'fcmToken': token,
             'updatedAt': FieldValue.serverTimestamp(),
           }, SetOptions(merge: true));
+      _savedToken = token;
     } catch (error) {
       debugPrint('No se pudo guardar el token FCM: $error');
     }

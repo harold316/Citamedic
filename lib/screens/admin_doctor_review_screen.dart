@@ -108,7 +108,13 @@ class _AdminDoctorReviewScreenState extends State<AdminDoctorReviewScreen> {
             children: [
               _InfoLine(label: 'Credenciales', value: doctor.credentials),
               _InfoLine(label: 'Clínica', value: doctor.hospital),
-              _InfoLine(label: 'WhatsApp', value: doctor.phone),
+              _InfoLine(
+                label: 'WhatsApp',
+                value: doctor.phone,
+                onTap: doctor.hasWhatsApp
+                    ? () => openDoctorWhatsApp(doctor)
+                    : null,
+              ),
               _InfoLine(label: 'Horario', value: doctor.workingHours),
               _InfoLine(
                 label: 'Ubicación',
@@ -189,13 +195,6 @@ class _AdminDoctorReviewScreenState extends State<AdminDoctorReviewScreen> {
               ),
             ),
           ],
-          if (doctor.hasWhatsApp) ...[
-            const SizedBox(height: 16),
-            SecondaryPillButton(
-              label: 'Abrir WhatsApp del médico',
-              onPressed: () => openDoctorWhatsApp(doctor),
-            ),
-          ],
           const SizedBox(height: 16),
           if (doctor.published)
             SecondaryPillButton(
@@ -217,6 +216,15 @@ class _AdminDoctorReviewScreenState extends State<AdminDoctorReviewScreen> {
               ),
               child: const Text('Rechazar perfil'),
             ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: _working ? null : () => _delete(doctor),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.danger,
+            ),
+            icon: const Icon(Icons.delete_outline),
+            label: Text(_working ? 'Espera...' : 'Eliminar perfil'),
+          ),
         ],
       ),
     );
@@ -339,6 +347,58 @@ class _AdminDoctorReviewScreenState extends State<AdminDoctorReviewScreen> {
       }
     }
   }
+
+  Future<void> _delete(Doctor doctor) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Eliminar perfil'),
+          content: Text(
+            'Se borrará el perfil de ${doctor.name}, su cuenta de acceso y ya no podrá entrar. Esta acción no se puede deshacer.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+              child: const Text('Eliminar'),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+    final auth = context.read<AuthProvider>();
+    setState(() => _working = true);
+    try {
+      await context.read<DoctorsProvider>().deleteDoctor(doctor.id);
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Se eliminó el perfil de ${doctor.name}.'),
+        ),
+      );
+      Navigator.pop(context);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(auth.messageFor(error))));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _working = false);
+      }
+    }
+  }
 }
 
 class _Badge extends StatelessWidget {
@@ -386,14 +446,22 @@ class _InfoCard extends StatelessWidget {
 }
 
 class _InfoLine extends StatelessWidget {
-  const _InfoLine({required this.label, required this.value});
+  const _InfoLine({required this.label, required this.value, this.onTap});
 
   final String label;
   final String value;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final text = Text(
+      value.trim().isEmpty ? '—' : value,
+      style: TextStyle(
+        fontWeight: FontWeight.w700,
+        color: onTap != null ? AppColors.primary : colors.text,
+      ),
+    );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -404,13 +472,9 @@ class _InfoLine extends StatelessWidget {
             child: Text(label, style: TextStyle(color: colors.muted)),
           ),
           Expanded(
-            child: Text(
-              value.trim().isEmpty ? '—' : value,
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                color: colors.text,
-              ),
-            ),
+            child: onTap == null
+                ? text
+                : GestureDetector(onTap: onTap, child: text),
           ),
         ],
       ),

@@ -8,6 +8,7 @@ import '../theme/app_theme.dart';
 import '../widgets/appointment_card.dart';
 import '../widgets/network_photo.dart';
 import '../widgets/notifications_bell_button.dart';
+import 'appointment_detail_screen.dart';
 
 class AppointmentsScreen extends StatelessWidget {
   const AppointmentsScreen({super.key});
@@ -58,7 +59,7 @@ class AppointmentsScreen extends StatelessWidget {
                           const SizedBox(height: 12),
                           Text(
                             context.watch<AuthProvider>().isGuest
-                                ? 'En modo invitado no puedes agendar citas. Inicia sesión con Google para reservar y ver tu historial.'
+                                ? 'En modo invitado no puedes agendar citas. Inicia sesión para reservar y ver tu historial.'
                                 : 'Aún no tienes citas confirmadas.',
                             textAlign: TextAlign.center,
                           ),
@@ -72,22 +73,32 @@ class AppointmentsScreen extends StatelessWidget {
                     separatorBuilder: (_, _) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final appointment = appointments[index];
-                      final doctor = doctors.byId(appointment.doctorId);
+                      final doctor = doctors.findById(appointment.doctorId);
                       final serviceName = appointment.serviceName.isNotEmpty
                           ? appointment.serviceName
-                          : doctor.serviceById(appointment.serviceId).name;
+                          : 'Consulta';
 
                       return AppointmentCard(
                         appointment: appointment,
-                        title: doctor.name,
+                        title: doctor?.name ?? 'Médico',
                         subtitle: serviceName,
-                        leading: SizedBox(
-                          width: 72,
-                          height: 72,
-                          child: NetworkPhoto(
-                            url: doctor.photoUrl,
-                            borderRadius: BorderRadius.circular(18),
-                          ),
+                        leading: doctor == null
+                            ? null
+                            : SizedBox(
+                                width: 72,
+                                height: 72,
+                                child: NetworkPhoto(
+                                  url: doctor.photoUrl,
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                              ),
+                        onTap: () => openAppointmentDetail(
+                          context,
+                          appointment,
+                        ),
+                        onDelete: () => deleteAppointmentWithConfirm(
+                          context,
+                          appointment: appointment,
                         ),
                       );
                     },

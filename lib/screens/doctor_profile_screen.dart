@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../data/mock_data.dart';
 import '../providers/auth_provider.dart';
 import '../providers/doctors_provider.dart';
 import '../theme/app_theme.dart';
@@ -126,7 +127,9 @@ class DoctorProfileScreen extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '${doctor.specialty} especialista',
+                  doctor.specialty == defaultSpecialty
+                      ? doctor.specialty
+                      : '${doctor.specialty} especialista',
                   style: const TextStyle(color: AppColors.primary),
                 ),
                 const SizedBox(height: 16),

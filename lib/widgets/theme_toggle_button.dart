@@ -18,6 +18,12 @@ class ThemeToggleButton extends StatelessWidget {
 
     return IconButton(
       tooltip: tooltip,
+      visualDensity: VisualDensity.compact,
+      style: IconButton.styleFrom(
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        minimumSize: const Size(40, 40),
+        padding: const EdgeInsets.all(6),
+      ),
       onPressed: () => theme.cycle(MediaQuery.platformBrightnessOf(context)),
       icon: Icon(icon, color: color),
     );

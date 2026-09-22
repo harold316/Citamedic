@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -13,12 +11,15 @@ import '../models/clinic.dart';
 import '../models/clinic_photo_draft.dart';
 import '../models/doctor_review_status.dart';
 import '../models/user_location.dart';
+import '../services/firebase_economy.dart';
 import '../services/storage_upload.dart';
 
 class ClinicsProvider extends ChangeNotifier {
   final List<Clinic> _catalog = List.of(mockClinics);
   List<Clinic> _registered = const [];
-  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _subscription;
+  DateTime? _fetchedAt;
+  bool _includeUnpublished = false;
+  Future<void>? _refreshing;
   Clinic? registrationDraft;
   List<ClinicPhotoDraft> registrationPhotos = const [];
 
@@ -62,24 +63,106 @@ class ClinicsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void start() {
+  Future<void> refreshIfNeeded({
+    bool includeUnpublished = false,
+    bool force = false,
+    String? alsoUid,
+  }) {
+    final missingOwn =
+        alsoUid != null &&
+        alsoUid.isNotEmpty &&
+        !_registered.any((clinic) => clinic.id == alsoUid);
+    final stale =
+        _fetchedAt == null ||
+        DateTime.now().difference(_fetchedAt!) > FirebaseEconomy.catalogTtl;
+    final needsScope = includeUnpublished && !_includeUnpublished;
+    if (!force &&
+        !stale &&
+        !needsScope &&
+        !missingOwn &&
+        _registered.isNotEmpty) {
+      return Future.value();
+    }
+    return refresh(
+      includeUnpublished: includeUnpublished || _includeUnpublished,
+      alsoUid: alsoUid,
+      force: force,
+    );
+  }
+
+  Future<void> refresh({
+    bool includeUnpublished = false,
+    String? alsoUid,
+    bool force = false,
+  }) {
+    return _refreshing ??= _loadCatalog(
+      includeUnpublished: includeUnpublished,
+      alsoUid: alsoUid,
+      force: force,
+    ).whenComplete(() => _refreshing = null);
+  }
+
+  Future<void> _loadCatalog({
+    required bool includeUnpublished,
+    String? alsoUid,
+    required bool force,
+  }) async {
     if (Firebase.apps.isEmpty) {
       return;
     }
-    _subscription ??= FirebaseFirestore.instance
-        .collection(FirestorePaths.clinics)
-        .snapshots()
-        .listen(
-          (snapshot) {
-            _registered = snapshot.docs
-                .map((doc) => Clinic.fromMap(doc.id, doc.data()))
-                .toList();
-            notifyListeners();
-          },
-          onError: (error) {
-            debugPrint('No se pudieron leer clínicas: $error');
-          },
+    try {
+      Query<Map<String, dynamic>> query = FirebaseFirestore.instance
+          .collection(FirestorePaths.clinics);
+      if (!includeUnpublished) {
+        query = query.where('published', isEqualTo: true);
+      }
+      final key = FirebaseEconomy.catalogKey(
+        collection: FirestorePaths.clinics,
+        includeUnpublished: includeUnpublished,
+      );
+      final cached = await FirebaseEconomy.cachedQuery(query);
+      if (cached != null) {
+        await _applyCatalog(
+          cached,
+          includeUnpublished: includeUnpublished,
+          alsoUid: alsoUid,
         );
+        if (!force && await FirebaseEconomy.isCatalogFresh(key)) {
+          return;
+        }
+      }
+      final snapshot = await FirebaseEconomy.serverQuery(query);
+      await _applyCatalog(
+        snapshot,
+        includeUnpublished: includeUnpublished,
+        alsoUid: alsoUid,
+      );
+      await FirebaseEconomy.markCatalogFresh(key);
+    } catch (error) {
+      debugPrint('No se pudieron leer clínicas: $error');
+    }
+  }
+
+  Future<void> _applyCatalog(
+    QuerySnapshot<Map<String, dynamic>> snapshot, {
+    required bool includeUnpublished,
+    String? alsoUid,
+  }) async {
+    var items = snapshot.docs
+        .map((doc) => Clinic.fromMap(doc.id, doc.data()))
+        .toList();
+    if (alsoUid != null &&
+        alsoUid.isNotEmpty &&
+        !items.any((clinic) => clinic.id == alsoUid)) {
+      final own = await loadProfile(alsoUid);
+      if (own != null) {
+        items = [own, ...items];
+      }
+    }
+    _registered = items;
+    _includeUnpublished = includeUnpublished;
+    _fetchedAt = DateTime.now();
+    notifyListeners();
   }
 
   Future<Clinic?> loadProfile(String uid) async {
@@ -87,11 +170,9 @@ class ClinicsProvider extends ChangeNotifier {
       return null;
     }
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection(FirestorePaths.clinics)
-          .doc(uid)
-          .get()
-          .timeout(const Duration(seconds: 8));
+      final doc = await FirebaseEconomy.getDocument(
+        FirebaseFirestore.instance.collection(FirestorePaths.clinics).doc(uid),
+      ).timeout(const Duration(seconds: 8));
       if (!doc.exists || doc.data() == null) {
         return null;
       }
@@ -254,9 +335,4 @@ class ClinicsProvider extends ChangeNotifier {
     );
   }
 
-  @override
-  void dispose() {
-    _subscription?.cancel();
-    super.dispose();
-  }
 }

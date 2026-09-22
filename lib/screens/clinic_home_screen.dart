@@ -14,11 +14,13 @@ import '../theme/app_theme.dart';
 import '../utils/gps.dart';
 import '../utils/maps.dart';
 import '../widgets/clinic_photo_grid.dart';
+import '../widgets/delete_account_button.dart';
 import '../widgets/gps_capture_tile.dart';
 import '../widgets/location_selectors.dart';
 import '../widgets/notifications_bell_button.dart';
 import '../widgets/primary_pill_button.dart';
 import '../widgets/service_editor_list.dart';
+import '../widgets/support_tech_button.dart';
 import '../widgets/theme_toggle_button.dart';
 
 class ClinicHomeScreen extends StatefulWidget {
@@ -146,6 +148,7 @@ class _ClinicHomeScreenState extends State<ClinicHomeScreen> {
         title: const Text('Mi clínica'),
         actions: [
           const NotificationsBellButton(),
+          const SupportTechIconButton(),
           const ThemeToggleButton(),
           IconButton(
             tooltip: 'Cerrar sesión',
@@ -277,6 +280,12 @@ class _ClinicHomeScreenState extends State<ClinicHomeScreen> {
                 PrimaryPillButton(
                   label: _saving ? 'Espera...' : 'Enviar a revisión',
                   onPressed: _saving ? null : _save,
+                ),
+                const SizedBox(height: 16),
+                DeleteAccountButton(
+                  onBeforeDelete: () async {
+                    context.read<ClinicsProvider>().forgetRegistration();
+                  },
                 ),
               ],
             ),

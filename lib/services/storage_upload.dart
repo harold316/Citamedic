@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:http/http.dart' as http;
 
+import 'firebase_economy.dart';
+
 class StorageUpload {
   static Future<String> jpeg({
     required String path,
@@ -13,7 +15,8 @@ class StorageUpload {
     if (user == null) {
       throw StateError('Debes iniciar sesión para subir archivos.');
     }
-    final token = await user.getIdToken(true);
+    final compact = await FirebaseEconomy.compactJpeg(bytes);
+    final token = await user.getIdToken();
     if (token == null || token.isEmpty) {
       throw StateError('No se pudo obtener el token de Firebase.');
     }
@@ -37,11 +40,16 @@ class StorageUpload {
         return await _uploadToBucket(
           bucket: bucket,
           path: path,
-          bytes: bytes,
+          bytes: compact,
           token: token,
         );
       } catch (error) {
         lastError = error;
+        final retryAnotherBucket =
+            error is StateError && error.message.contains('bucket');
+        if (!retryAnotherBucket) {
+          rethrow;
+        }
       }
     }
     throw lastError ?? StateError('No se pudo subir la imagen.');

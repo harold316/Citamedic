@@ -39,5 +39,22 @@
   ],
   "storage": {
     "rules": "storage.rules"
+  },
+  "hosting": {
+    "public": "docs",
+    "ignore": [
+      "firebase.json",
+      "**/.*"
+    ],
+    "rewrites": [
+      {
+        "source": "/",
+        "destination": "/politica-de-privacidad.html"
+      },
+      {
+        "source": "/privacidad",
+        "destination": "/politica-de-privacidad.html"
+      }
+    ]
   }
 }
